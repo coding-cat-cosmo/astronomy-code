@@ -11,10 +11,8 @@ import os
 # Parent Directory path
 #parent_dir = str(p.parent)
 #place = os.path.join(parent_dir, "")
-os.chdir("../../test")
-print(os.getcwd())
-os.chdir("../dr12q/spectra")
-print(os.getcwd())
+os.system("pushd ../dr12q/spectra")
 os.system("rsync --info=progress2 -h --no-motd --files-from=file_list rsync://data.sdss.org/dr12/boss/spectro/redux/ . 2> /dev/null")
+os.system("popd")
 #print(os.system("rsync --info=progress2 -h --no-motd --files-from=file_list rsync://data.sdss.org/dr12/boss/spectro/redux/ . 2> /dev/null"))
 
