@@ -101,12 +101,12 @@ from pathlib import Path
 import numpy as np
 import os
 
-dill.load_session("parameters.pkl")
+#dill.load_session("parameters.pkl")
 
 def read_spec(plate, mjd, fiber_id, directory):
     fileName = "{direc}/{plates}/spec-{plates}-{mjds}-{:04d}.fits".format(fiber_id, direc=directory, plates=plate, mjds=mjd)
     #mask bits to consider
-    BRIGHTSKY = 24
+    BRIGHTSKY = 23
     
     #measurements = fitsread(filename, 'binarytable',  1, 'tablecolumns', 1:4)
     with fits.open(fileName) as hdl:
@@ -127,13 +127,15 @@ def read_spec(plate, mjd, fiber_id, directory):
 
     # convert log_10 wavelengths to wavelengths
     wavelengths = np.power(10, log_wavelengths)
+    #print("log_wavelengths")
+    #print(log_wavelengths)
 
     # derive noise variance
-    noise_variance = 1 / (inverse_noise_variance)
+    noise_variance = 1.0 / (inverse_noise_variance)
 
     # derive bad pixel mask, remove pixels considered very bad
     # (FULLREJECT, NOSKY, NODATA); additionally remove pixels with BRIGHTSKY set
-    pixel_mask = (inverse_noise_variance == 0) | and_mask[BRIGHTSKY]
+    pixel_mask = (inverse_noise_variance==0) | (and_mask & pow(2,BRIGHTSKY))
     
     return [wavelengths, flux, noise_variance, pixel_mask];
 
@@ -165,10 +167,12 @@ parent_dir = str(p.parent)
 release = "dr12q/processed/catalog"
 filename = os.path.join(parent_dir, release)
 #getting back pickled data
-with open(filename,'rb') as f:
-     variables_to_load = pickle.load(f)
-print(variables_to_load)
-
+try:
+    with open(filename,'rb') as f:
+        variables_to_load = pickle.load(f)
+except:
+    print(variables_to_load)
+    
 z_qsos = variables_to_load["z_qsos"]
 plates = variables_to_load["plates"]
 mjds = variables_to_load["mjds"]
@@ -176,11 +180,13 @@ fiber_ids = variables_to_load["fiber_ids"]
 filter_flags = variables_to_load["filter_flags"]
 
 num_quasars = len(z_qsos)
+#for debugging purposes, will be shortened to 5000
+num_quasars = 5000
 
-all_wavelengths    =  {}
-all_flux           =  {}
-all_noise_variance =  {}
-all_pixel_mask     =  {}
+all_wavelengths    =  []
+all_flux           =  []
+all_noise_variance =  []
+all_pixel_mask     =  []
 all_normalizers    = np.zeros(num_quasars, 'uint8')
 
 release = "dr12q/spectra"
@@ -188,6 +194,11 @@ directory = os.path.join(parent_dir, release)
 
 for i in range(num_quasars):
     if (filter_flags[i] > 0):
+        #print("skipped at ", i)
+        all_wavelengths.append(0)
+        all_flux.append(0)
+        all_noise_variance.append(0)
+        all_pixel_mask.append(0)
         continue
     #file_load pain
     #print('\nplates')
@@ -198,20 +209,31 @@ for i in range(num_quasars):
     #print(fiber_ids[0])
     [this_wavelengths, this_flux, this_noise_variance, this_pixel_mask] = read_spec(plates[i], mjds[i], fiber_ids[i], directory)
      # do not normalize flux: this is done in the learning and processing code.
-    ind = (this_wavelengths >= (nullParams.min_lambda * (preParams.z_qso_cut) + 1)) & (this_wavelengths <= (nullParams.max_lambda * (preParams.z_qso_training_max_cut) + 1)) & (~this_pixel_mask)
+    ind = (this_wavelengths >= (nullParams.min_lambda * (preParams.z_qso_cut) + 1)) & (this_wavelengths <= (nullParams.max_lambda * (preParams.z_qso_training_max_cut) + 1)) & (np.logical_not(this_pixel_mask))
     
     # bit 3: not enough pixels available
     if (np.count_nonzero(ind) < preParams.min_num_pixels):
+        #filter_flags[i] = filter_flags[i] | 0x00001000
         filter_flags[i] = 4
+        print("added at", i)
+        all_wavelengths.append(0)
+        all_flux.append(0)
+        all_noise_variance.append(0)
+        all_pixel_mask.append(0)
         continue
     
-    all_wavelengths[i]    =    this_wavelengths
-    all_flux[i]           =           this_flux
-    all_noise_variance[i] = this_noise_variance
-    all_pixel_mask[i]     =     this_pixel_mask
+    all_wavelengths.append(this_wavelengths)
+    all_flux.append(this_flux)
+    all_noise_variance.append(this_noise_variance)
+    all_pixel_mask.append(this_pixel_mask)
     
     message = "loaded quasar {num} of {numQ} ({plate}/{mjd}/{:04d})\n".format(fiber_ids[i], num=i, numQ=num_quasars, plate=plates[i], mjd=mjds[i])
     print(message)
+
+all_wavelengths = np.array(all_wavelengths)
+all_flux = np.array(all_flux)
+all_noise_variance = np.array(all_noise_variance)
+all_pixel_mask = np.array(all_pixel_mask)
 
 variables_to_save = {'loading_min_lambda' : loading.loading_min_lambda, 'loading_max_lambda' : loading.loading_max_lambda,
                      'normalization_min_lambda': normParams.normalization_min_lambda,
@@ -231,15 +253,26 @@ pickle.dump(variables_to_save, file_handler)
 # close the file handler to release the resources
 file_handler.close()
 
+new_filter_flags = filter_flags
+
 # write new filter flags to catalog
 filepath = os.path.join(filename, "catalog")
-file_handler = open(filepath, 'a')
+#getting back pickled data
+#try:
+with open(filepath,'rb') as f:
+    temp = pickle.load(f)
+#except:
+temp['new_filter_flags'] = new_filter_flags
+
+# Open a file for writing data
+file_handler = open(filepath, 'wb')
 
 # Dump the data of the object into the file
-pickle.dump(filter_flags, file_handler)
+pickle.dump(temp, file_handler)
 
 # close the file handler to release the resources
 file_handler.close()
+#np.save(filename, variables_to_save)
 
 print("\nz_qsos")
 print(z_qsos)
@@ -255,4 +288,6 @@ print("\nall_normalizers")
 print(all_normalizers)
 print("\nvariables_to_save")
 print(variables_to_save)
+print("\ntemp")
+print(temp)
 print("\n\n\nn")

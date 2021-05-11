@@ -357,6 +357,7 @@ class null_params:
 
 #dill.dump_session('parameters.pkl')
 #import dill
+import dill
 import pickle
 from astropy.io import fits
 from astropy.io.fits import getdata
@@ -365,7 +366,7 @@ import os
 import numpy as np
 import astropy
 import pandas as pd
-#dill.load_session('parameters.pk1')
+#dill.load_session('parameters.pkl')
 #astropy.io.fits.Conf.use_memmap = True
 #lazy_load_hdus=False
 #disable_image_compression=True
@@ -414,7 +415,7 @@ thing_ids        =  dr12_catalog.field('THING_ID')
 plates           =  dr12_catalog.field('PLATE')
 mjds             =  dr12_catalog.field('MJD')
 fiber_ids        =  dr12_catalog.field('FIBERID')
-z_qsos           =  dr12_catalog.field('Z_PIPE')
+z_qsos           =  dr12_catalog.field('Z_VI')
 zwarning         =  dr12_catalog.field('ZWARNING')
 snrs             =  dr12_catalog.field('SNR_SPEC')
 bal_visual_flags = (dr12_catalog.field('BAL_FLAG_VI') > 0)
@@ -435,7 +436,9 @@ other = np.zeros(num_quasars, np.uint8)
 
 # filtering bit 0: z_QSO < 2.15
 ind = (z_qsos < preParams.z_qso_cut)
-filter_flags = np.bitwise_or(filter_flags, ind)
+#filter_flags = np.bitwise_or(filter_flags, ind)
+#filter_flags[ind] = filter_flags[ind] | 0x00000001
+filter_flags[ind] = 1
 #filter_flags(ind) = bitset(filter_flags(ind), 1, true)
 
 # filtering bit 1: BAL
@@ -445,30 +448,47 @@ filter_flags = np.bitwise_or(filter_flags, ind)
     #foo[idx] = a + 42
 ind = (bal_visual_flags)
 #comp = np.bitwise_or(comp, ind)
-comp = comp | ind
+#comp = comp | ind
 #comp[val == 1] = 2
-comp[ind] = 2
+#comp[ind] = 2
 #comp = [val if val != 1 else 2 for val in comp]
 #for idx, val in enumerate(comp):
 #    if (val == 1):
 #        comp[idx] = 2
 
-filter_flags = filter_flags + comp
+#filter_flags = filter_flags + comp
 #filter_flags(ind) = bitset(filter_flags(ind), 2, true)
+#filter_flags[ind] = filter_flags[ind] | 0x00000010
+filter_flags[ind] = 2
 
 # filtering bit 4: ZWARNING
 ind = (zwarning > 0) #and zwarning <= 16)
+print("ind", ind, ind.shape, np.count_nonzero(ind))
 # but include `MANY_OUTLIERS` in our samples (bit: 1000)
-ind_many_outliers = (zwarning >= 16)
-ind = ind & ~ind_many_outliers
+ind_many_outliers = (zwarning == 16)
+ind = ind & np.logical_not(ind_many_outliers)
 #ind_many_outliers      = (zwarning == int('10000', 2))
 #temp idea (only works for 3/4 of cases)
 #ind = np.bitwise_xor(ind, ind_many_outliers)
 #other = np.bitwise_or(other, ind)
+#filter_flags[ind] = filter_flags[ind] | 0x00010000
 filter_flags[ind] = 5
 #filter_flags = filter_flags + other
 #ind(ind_many_outliers) = 0
 #filter_flags(ind) = bitset(filter_flags(ind), 5, true)
+
+#print("ind_many_outliers")
+#print(ind_many_outliers)
+#print(ind_many_outliers.shape)
+#print(np.count_nonzero(ind_many_outliers))
+#print("ind")
+#print(ind)
+#print(ind.shape)
+#print(np.count_nonzero(ind))
+#temp = zwarning[zwarning>0]
+#print("temp")
+#print(temp)
+#print(temp.shape)
 
 los_inds = {}
 dla_inds = {}
@@ -627,6 +647,9 @@ print('\nlog_nhis')
 print(log_nhis)
 print('\nvariables_to_save')
 print(variables_to_save)
+print("v_5_7_2_ind")
+print(v_5_7_2_ind)
+print(v_5_7_2_ind.shape)
 #print('\nplate_data')
 #print(plate_data)
 print('\n\n\ni')
