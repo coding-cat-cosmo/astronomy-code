@@ -43,7 +43,7 @@ class flags: #flags for changes
         self.extrapolate_subdla = 0
         self.add_proximity_zone = 0
         self.integrate = 1
-        self.optTag = (str(integrate), str(extrapolate_subdla), str(add_proximity_zone))
+        self.optTag = (str(self.integrate), str(self.extrapolate_subdla), str(self.add_proximity_zone))
 
    # def __getstate__(self):
    #     attributes = self.__dict__.copy()
@@ -66,7 +66,7 @@ physConst = physical_constants()
 kms_to_z = lambda kms : (kms * 1000) / physConst.speed_of_light
 
 # utility functions for redshifting
-emitted_wavelengths = lambda observed_wavelengths, z : (observed_wavelengths / (1 + z))
+emitted_wavelengths = lambda observed_wavelengths, z : (observed_wavelengths / float((1 + z)))
 
 observed_wavelengths = lambda emitted_wavelengths, z : (emitted_wavelengths * (1 + z))
 
@@ -116,5 +116,23 @@ class learning_params:
         # oscillator strengths
         self.lya_oscillator_strength = 0.416400
         self.lyb_oscillator_strength = 0.079120
+
+# optimization parameters
+class optimization_params:
+    def __init__(self):
+        self.initial_c_0 = 0.1   # initial guess for c₀
+        self.initial_tau_0 = 0.0023   # initial guess for τ₀
+        self.initial_beta = 3.65  # initial guess for β
+        
+# DLA model parameters: parameter samples
+class dla_params:
+    def __init__(self):
+        self.num_dla_samples     = 100000                 # number of parameter samples
+        self.alpha               = 0.9                    # weight of KDE component in mixture
+        self.uniform_min_log_nhi = 20.0                   # range of column density samples    [cm⁻²]
+        self.uniform_max_log_nhi = 23.0                   # from uniform distribution
+        self.fit_min_log_nhi     = 20.0                   # range of column density samples    [cm⁻²]
+        self.fit_max_log_nhi     = 22.0                   # from fit to log PDF
+
 
 dill.dump_session('parameters.pkl')

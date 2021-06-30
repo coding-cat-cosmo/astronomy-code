@@ -356,7 +356,6 @@ class null_params:
 
 
 #dill.dump_session('parameters.pkl')
-#import dill
 import dill
 import pickle
 from astropy.io import fits
@@ -511,16 +510,19 @@ for cat in catalog_name:
     dla_inds[cat] = np.isin(thing_ids, dla_catalog)
     ind = np.isin(thing_ids, dla_catalog[:,0])
     ind = np.where(ind > 0)
-    this_z_dlas = {}
-    this_log_nhis = {}
+    ind = np.squeeze(ind)
+    this_z_dlas = np.zeros(num_quasars)
+    this_log_nhis = np.zeros(num_quasars)
+    this_z_dlas = this_z_dlas.tolist()
+    this_log_nhis = this_log_nhis.tolist()
     
     for i in range(len(ind)):
-        this_dla_ind = (dla_catalog[:,0] == thing_ids[i])
+        this_dla_ind = (dla_catalog[:,0] == thing_ids[ind[i]])
         #print('\nloopy')
         #print(i)
         #print(dla_catalog[:,0] == thing_ids[i])
-        this_z_dlas[i]   = dla_catalog[this_dla_ind, 1]
-        this_log_nhis[i] = dla_catalog[this_dla_ind, 2]
+        this_z_dlas[ind[i]]   = dla_catalog[this_dla_ind, 1]
+        this_log_nhis[ind[i]] = dla_catalog[this_dla_ind, 2]
         
     z_dlas[cat] = this_z_dlas
     log_nhis[cat] = this_log_nhis
@@ -641,10 +643,10 @@ print('\ndla_inds')
 print(dla_inds)
 print('\nind')
 print(ind)
-print('\nz_dlas')
-print(z_dlas)
-print('\nlog_nhis')
-print(log_nhis)
+#print('\nz_dlas')
+#print(z_dlas)
+#print('\nlog_nhis')
+#print(log_nhis)
 print('\nvariables_to_save')
 print(variables_to_save)
 print("v_5_7_2_ind")
