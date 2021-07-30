@@ -41,9 +41,71 @@ def log_mvnpdf_iid(y, mu, d):
                     
     return log_p
 
+# log_mvnpdf_low_rank: efficiently computes
+#
+#   log N(y; mu, MM' + diag(d))
+
+def log_mvnpdf_low_rank(y, mu, M, d):
+
+    #disp(mean(y));
+    #disp(mean(mu));
+    #disp(mean(M(:)));
+    #disp(mean(d));
+    log_2pi = 1.83787706640934534
+
+    [n, k] = M.shape
+    #print("\nthen", n)
+    #print("\nk", k)
+ 
+    y = y - (mu)
+    #print("\ny", y, y.shape)
+    #d = np.ones(len(d)) * .001 #here
+    d_inv = 1 / d
+    #print("\nd_inv", d_inv, d_inv.shape)
+    D_inv_y = d_inv * y
+    #print("\nD_inv_y", D_inv_y, D_inv_y.shape)
+
+    D_inv_M = d_inv[:, None] * M
+    #print("D_inv_M", D_inv_M, D_inv_M.shape)
+
+    # use Woodbury identity, define
+    #   B = (I + M' D^-1 M),
+    # then
+    #   K^-1 = D^-1 - D^-1 M B^-1 M' D^-1
+
+    B = np.dot(M.T, D_inv_M)
+    #print("\nB before", B, B.shape)
+    B = np.reshape(B, B.shape[0]*B.shape[1], order='F')
+    B[0::k+1] = B[0::k+1] + 1
+    B = np.reshape(B, [k, k], order='F')
+    #print("\nB after", B, B.shape)
+    L = np.linalg.cholesky(B)
+    L= L.T
+    #print("\nL", L, L.shape)
+    # C = B^-1 M' D^-1
+    ld = np.linalg.solve(L.T, D_inv_M.T)
+    #print("\nld", ld, ld.shape)
+    C= np.linalg.solve(L, ld)
+    #C = np.linalg.solve(L.T, np.linalg.solve(L, D_inv_M.T))
+    #print("\nC", C, C.shape)
+
+    mid = np.dot(C, y)
+    #print("\nmid", mid, mid.shape)
+    after = np.dot(D_inv_M, mid)
+    #print("\nafter", after, after.shape)
+    K_inv_y = D_inv_y - np.dot(D_inv_M, np.dot(C, y))
+    #print("\nK_inv_y", K_inv_y, K_inv_y.shape)
+
+    log_det_K = np.sum(np.log(d)) + 2 * np.sum(np.log(np.diag(L)))
+    #print("\nlog_det_K", log_det_K, log_det_K.shape)
+
+    log_p = -0.5 * (np.dot(y, K_inv_y) + log_det_K + n * log_2pi)
+    #print("\nlog_p", log_p)
+
+    return log_p
 
 
-    '''mex voigt.c -lcerf
+ '''mex voigt.c -lcerf
 % specify the learned quasar model to use
 training_release  = 'dr12q';
 training_set_name = 'dr9q_minus_concordance';
@@ -119,6 +181,14 @@ process_qsos;
 #   this additional log-likelihoods are:
 #     log N(y_bluewards; bluewards_mu, diag(V_bluewards) + bluewards_sigma^2 )
 #     log N(y_redwards;  redwards_mu,  diag(V_redwards)  + redwards_sigma^2 )
+import os
+import dill
+import pickle
+import time
+from pathlib import Path
+import numpy as np
+from scipy.interpolate import RegularGridInterpolator
+from multiprocessing import Pool
 
 # specify the learned quasar model to use
 training_release  = 'dr12q'
@@ -160,12 +230,12 @@ with open(filename,'rb') as f:
 
 prior_ind = prior_catalog['in_dr9'] & prior_catalog['los_inds'][dla_catalog_name] & (prior_catalog['new_filter_flags'] == 0)
 
-z_qsos  = prior_catalog['z_qsos'][prior_ind]
+orig_z_qsos  = prior_catalog['z_qsos'][prior_ind]
 dla_ind = prior_catalog['dla_inds'][dla_catalog_name]
 dla_ind = dla_ind[prior_ind]
 print("\nz_qsos")
-print(z_qsos)
-print(z_qsos.shape)
+print(orig_z_qsos)
+print(orig_z_qsos.shape)
 
 # filter out DLAs from prior catalog corresponding to region of spectrum below Ly∞ QSO rest
 z_dlas = prior_catalog['z_dlas'][dla_catalog_name]
@@ -185,7 +255,7 @@ thing = np.where(dla_ind > 0)
 thing = thing[0]
 #print("thing", thing)
 for i in thing:
-    if (observed_wavelengths(physConst.lya_wavelength, z_dlas[i]) < observed_wavelengths(physConst.lyman_limit, z_qsos[i])):
+    if (observed_wavelengths(physConst.lya_wavelength, z_dlas[i]) < observed_wavelengths(physConst.lyman_limit, orig_z_qsos[i])):
             dla_ind[i] = False
 
 #prior = rmfield(prior, 'z_dlas');
@@ -214,11 +284,11 @@ with open(place,'rb') as f:
 #print(model)
 rest_wavelengths = model['rest_wavelengths']
 mu = model['mu']
-M = model['M']
-log_omega = model['log_omega']
-log_c_0 = model['log_c_0']
-log_tau_0 = model['log_tau_0']
-log_beta = model['log_beta']
+#M = model['M']
+#log_omega = model['log_omega']
+#log_c_0 = model['log_c_0']
+#log_tau_0 = model['log_tau_0']
+#log_beta = model['log_beta']
 bluewards_mu = model['bluewards_mu']
 bluewards_sigma = model['bluewards_sigma']
 redwards_mu = model['redwards_mu']
@@ -352,7 +422,7 @@ beta  = np.exp(log_beta)
 z_list = [x for x in range(len(offset_samples_qso))]
 z_list = np.array(z_list)
 #Debug output
-#all_mus = cell(size(z_list));
+#all_mus =[]
 
 fluxes = []
 rest_wavelengths = []
@@ -853,6 +923,265 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
         #print(this_lyseries_zs.shape)
         print("\n\n\n")
         
+        for l in range(learnParams.num_forest_lines):
+            this_lyseries_zs[:, l] = (this_wavelengths - learnParams.all_transition_wavelengths[l]) / learnParams.all_transition_wavelengths[l]
+
+        #print("\nthis_lyseries_zs")
+        #print(this_lyseries_zs)
+        #print(this_lyseries_zs.shape)
+        # DLA existence prior
+        less_ind = (orig_z_qsos < (z_qso + modelParams.prior_z_qso_increase))
+        #print("\nless_ind")
+        #print(less_ind)
+        #print(len(less_ind), np.count_nonzero(less_ind))
+        #print("\ndla_ind")
+        #print(dla_ind)
+        #print(dla_ind.shape)
+
+        this_num_dlas    = np.count_nonzero(dla_ind[less_ind])
+        this_num_quasars = np.count_nonzero(less_ind)
+        this_p_dla       = this_num_dlas / float(this_num_quasars)
+        this_p_dlas[i]   = this_p_dla
+        #print("\nthis_num_dlas")
+        #print(this_num_dlas)
+        #print("\nthis_num_quasars")
+        #print(this_num_quasars)
+        #print("\nthis_p_dla")
+        #print(this_p_dla)
+        #print("\nthis_p_dlas")
+        #print(this_p_dlas)
+        #print(this_p_dlas.shape)
+
+        #minimal plausible prior to prevent NaN on low z_qso;
+        if this_num_dlas == 0:
+            this_num_dlas = 1
+            this_num_quasars = len(less_ind)
+        
+        #print("\nafter this_num_dlas")
+        #print(this_num_dlas)
+        #print("\nafter this_num_quasars")
+        #print(this_num_quasars)
+        this_sample_log_priors_dla[i] = np.log(this_num_dlas) - np.log(this_num_quasars)
+        this_sample_log_priors_no_dla[i] = np.log(this_num_quasars - this_num_dlas) - np.log(this_num_quasars)
+        #print("\nthis_sample_log_priors_dla")
+        #print(this_sample_log_priors_dla)
+        #print(this_sample_log_priors_dla.shape)
+        #print("\nthis_sample_log_priors_no_dla")
+        #print(this_sample_log_priors_no_dla)
+        #print(this_sample_log_priors_no_dla.shape)
+
+        #sample_log_priors_dla(quasar_ind, z_list_ind) = log(.5);
+        #sample_log_priors_no_dla(quasar_ind, z_list_ind) = log(.5);
+
+        # fprintf_debug('\n');
+        print(' ...     p(   DLA | z_QSO)        : {th:0.3f}\n'.format(th=this_p_dla))
+        print(' ...     p(no DLA | z_QSO)        : {th:0.3f}\n'.format(th=1 - this_p_dla))
+
+        # interpolate model onto given wavelengths
+        this_mu = mu_interpolator(this_rest_wavelengths)
+        #print("\nthis_mu")
+        #print(this_mu)
+        #print(this_mu.shape)
+        this_M  =  M_interpolator((this_rest_wavelengths[:, None], np.arange(nullParams.k)[None, :]))
+        #print("\nthis_M")
+        #print(this_M)
+        #print(this_M.shape)
+        #Debug output
+        #all_mus[z_list_ind] = this_mu
+        #all_Ms[z_list_ind] = this_M
+
+        this_log_omega = log_omega_interpolator(this_rest_wavelengths)
+        #print("\nthis_log_omega")
+        #print(this_log_omega)
+        #print(this_log_omega.shape)
+        this_omega2 = np.exp(2 * this_log_omega)
+        #print("\nthis_omega2")
+        #print(this_omega2)
+        #print(this_omega2.shape)
+        
+        # Lyman series absorption effect for the noise variance
+        # note: this noise variance must be trained on the same number of members of Lyman series
+        lya_optical_depth = tau_0 * (1 + this_lya_zs)**beta
+        #print("\nlya_optical_depth")
+        #print(lya_optical_depth)
+        #print(lya_optical_depth.shape)
+
+        # Note: this_wavelengths is within (min_lambda, max_lambda)
+        # so it may beyond lya_wavelength, so need an indicator;
+        # Note: 1 - exp( -0 ) + c_0 = c_0
+        indicator         = this_lya_zs <= z_qso
+        lya_optical_depth = lya_optical_depth * indicator
+        #print("\nindicator")
+        #print(indicator)
+        #print(len(indicator))
+        #print("\nlya_optical_depth")
+        #print(lya_optical_depth)
+        #print(lya_optical_depth.shape)
+
+        for l in range(1,learnParams.num_forest_lines):
+            lyman_1pz = learnParams.all_transition_wavelengths[0] * (1 + this_lya_zs) / learnParams.all_transition_wavelengths[l]
+
+            # only include the Lyman series with absorber redshifts lower than z_qso
+            indicator = lyman_1pz <= (1 + z_qso)
+            lyman_1pz = lyman_1pz * indicator
+
+            tau = tau_0 * learnParams.all_transition_wavelengths[l] * learnParams.all_oscillator_strengths[l] / (learnParams.all_transition_wavelengths[0] * learnParams.all_oscillator_strengths[0])
+
+            lya_optical_depth = lya_optical_depth + tau * lyman_1pz**beta
+
+        this_scaling_factor = 1 - np.exp( -lya_optical_depth ) + c_0
+        
+        this_omega2 = this_omega2 * this_scaling_factor**2
+
+        # Lyman series absorption effect on the mean-flux
+        # apply the lya_absorption after the interpolation because NaN will appear in this_mu
+        total_optical_depth = np.empty((len(this_wavelengths), learnParams.num_forest_lines))
+        total_optical_depth[:] = np.NaN
+        #print("\nlyman_1pz")
+        #print(lyman_1pz)
+        #print(lyman_1pz.shape, np.count_nonzero(lyman_1pz))
+        #print("\nindicator")
+        #print(indicator)
+        #print(len(indicator), np.count_nonzero(indicator))
+        #print("\ntau")
+        #print(tau)
+        #print(tau.shape)
+        #print("\nlya_optical_depth")
+        #print(lya_optical_depth)
+        #print(lya_optical_depth.shape)
+        #print("\nthis_scaling_factor")
+        #print(this_scaling_factor)
+        #print("\nthis_omega2")
+        #print(this_omega2)
+        #print("\ntotal_optical_depth")
+        #print(total_optical_depth)
+        #print(total_optical_depth.shape)
+
+        for l in range(learnParams.num_forest_lines):
+            # calculate the oscillator strength for this lyman series member
+            this_tau_0 = prev_tau_0 * learnParams.all_oscillator_strengths[l] / learnParams.lya_oscillator_strength * learnParams.all_transition_wavelengths[l] / physConst.lya_wavelength
+
+            total_optical_depth[:, l] = this_tau_0 * ( (1 + this_lyseries_zs[:, l])**prev_beta )
+
+            # indicator function: z absorbers <= z_qso
+            # here is different from multi-dla processing script
+            # I choose to use zero instead or nan to indicate
+            # values outside of the Lyman forest
+            indicator = this_lyseries_zs[:, l] <= z_qso
+            total_optical_depth[:, l] = total_optical_depth[:, l] * indicator
+
+        # change from nansum to simply sum; shouldn't be different
+        # because we also change indicator from nan to zero,
+        # but if this script is glitchy then inspect this line
+        lya_absorption = np.exp(- np.sum(total_optical_depth, 1) )
+        #print("\nthis_tau_0")
+        #print(this_tau_0)
+        #print("\ntotal_optical_depth")
+        #print(total_optical_depth)
+        #print(total_optical_depth.shape)
+        #print("\nindicator")
+        #print(indicator)
+        #print(len(indicator), np.count_nonzero(indicator))
+        #print("\nlya_absorption")
+        #print(lya_absorption)
+
+        this_mu = this_mu * lya_absorption
+        this_M  = this_M  * lya_absorption[:, None]
+
+        # re-adjust (K + Ω) to the level of μ .* exp( -optical_depth ) = μ .* a_lya
+        # now the null model likelihood is:
+        # p(y | λ, zqso, v, ω, M_nodla) = N(y; μ .* a_lya, A_lya (K + Ω) A_lya + V)
+        this_omega2 = this_omega2 * lya_absorption**2
+
+        occams = occams_factor * (1 - lambda_observed / (nullParams.max_lambda - nullParams.min_lambda) )
+        #print("\nthis_mu")
+        #print(this_mu)
+        #print(this_mu.shape)
+        #print("\nthis_M")
+        #print(this_M)
+        #print(this_M.shape)
+        #print("\nthis_omega2")
+        #print(this_omega2)
+        #print(this_omega2.shape)
+        #print("\noccams")
+        #print(occams)
+        #print(occams.shape)
+        #broked
+
+        # baseline: probability of no DLA model
+        # The error handler to deal with Postive definite errors sometime happen
+        #try:
+        this_sample_log_likelihoods_no_dla[i] = log_mvnpdf_low_rank(this_flux, this_mu, this_M, this_omega2 + this_noise_variance) + bw_log_likelihood + rw_log_likelihood - occams
+        #this_sample_log_likelihoods_no_dla[i] = this_sample_log_likelihoods_no_dla[i] + bw_log_likelihood + rw_log_likelihood - occams
+        #except:
+            #if (strcmp(ME.identifier, 'MATLAB:posdef')):
+        #    this_posdeferror[i] = True
+        #    print('(QSO {qua}, Sample {it}): Matrix must be positive definite. We skip this sample but you need to be careful about this spectrum'.format(qua=quasar_num, it=i))
+        #    continue;
+                
+        #    raise
+
+        print(' ... log p(D | z_QSO, no DLA)     : {ts:0.2f}\n'.format(ts=this_sample_log_likelihoods_no_dla[i]))
+
+        # Add
+        if this_wavelengths.shape[0] == 0:
+            print("dunded")
+            continue;
+            #break
+
+        # use a temp variable to avoid the possible parfor issue
+        # should be fine after change size of min_z_dlas to (num_quasar, num_dla_samples)
+        this_min_z_dlas = moreParams.min_z_dla(this_wavelengths, z_qso)
+        this_max_z_dlas = moreParams.max_z_dla(this_wavelengths, z_qso)
+
+        min_z_dlas[quasar_ind, i] = this_min_z_dlas
+        max_z_dlas[quasar_ind, i] = this_max_z_dlas
+
+        sample_z_dlas = this_min_z_dlas + (this_max_z_dlas - this_min_z_dlas) * offset_samples
+
+        used_z_dla[i] = sample_z_dlas[i]
+        print("\nthis_min_z_dlas")
+        print(this_min_z_dlas)
+        print(this_min_z_dlas.shape)
+        print("\nthis_max_z_dlas")
+        print(this_max_z_dlas)
+        print(this_max_z_dlas.shape)
+        print("\nmin_z_dlas")
+        print(min_z_dlas)
+        print(min_z_dlas.shape)
+        print("\nmax_z_dlas")
+        print(max_z_dlas)
+        print(max_z_dlas.shape)
+        print("\nsample_z_dlas")
+        print(sample_z_dlas)
+        print(sample_z_dlas.shape)
+        print("\nused_z_dla")
+        print(used_z_dla)
+        print(used_z_dla.shape)
+
+        # ensure enough pixels are on either side for convolving with instrument profile
+        padded_wavelengths = [np.logspace(np.log10(np.min(this_unmasked_wavelengths)) - instrumentParams.width * instrumentParams.pixel_spacing,
+                            np.log10(np.min(this_unmasked_wavelengths)) - instrumentParams.pixel_spacing, instrumentParams.width).T,
+                            this_unmasked_wavelengths,
+                            np.logspace(np.log10(np.max(this_unmasked_wavelengths)) + instrumentParams.pixel_spacing,
+                            np.log10(np.max(this_unmasked_wavelengths)) + instrumentParams.width * instrumentParams.pixel_spacing, instrumentParams.width).T]
+
+        padded_wavelengths = np.array([x for ls in padded_wavelengths for x in ls])
+        print("\npadded_wavelengths")
+        print(padded_wavelengths)
+        print(padded_wavelengths.shape)
+        # to retain only unmasked pixels from computed absorption profile
+        ind = np.logical_not(this_pixel_mask[ind])
+        print("\nind")
+        print(ind)
+        print(len(ind), np.count_nonzero(ind))
+
+        # compute probabilities under DLA model for each of the sampled
+        # (normalized offset, log(N HI)) pairs absorption corresponding to this sample
+        absorption = voigt(padded_wavelengths, sample_z_dlas[i], nhi_samples[i], num_lines)
+        print("\nabsorption")
+        print(absorption)
+        print(absorption.shape)
         break
     
     elapsed = time.time() - t

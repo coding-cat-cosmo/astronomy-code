@@ -1,6 +1,10 @@
 import pickle
 import dill
 
+import pickle
+import dill
+import numpy as np
+
 #flags for changes
 #extrapolate_subdla = 0 #0 = off, 1 = on
 #add_proximity_zone = 0
@@ -133,6 +137,27 @@ class dla_params:
         self.uniform_max_log_nhi = 23.0                   # from uniform distribution
         self.fit_min_log_nhi     = 20.0                   # range of column density samples    [cm⁻²]
         self.fit_max_log_nhi     = 22.0                   # from fit to log PDF
+        
+# model prior parameters
+class model_params:
+    def __init__(self):
+        self.prior_z_qso_increase = kms_to_z(30000.0)       # use QSOs with z < (z_QSO + x) for prior
 
+# instrumental broadening parameters
+class instrument_params:
+    def __init__(self):
+        self.width = 3                                    # width of Gaussian broadening (# pixels)
+        self.pixel_spacing = .0001                        # wavelength spacing of pixels in dex
+
+# DLA model parameters: absorber range and model
+class more_dla_params:
+    def __init__(self):
+        self.num_lines = 3                                # number of members of the Lyman series to use
+        self.max_z_cut = kms_to_z(3000.0)                   # max z_DLA = z_QSO - max_z_cut
+ # determines maximum z_DLA to search
+        self.max_z_dla = lambda wavelengths, z_qso : min((np.max(wavelengths) / physConst.lya_wavelength - 1) - kms_to_z(3000.0), z_qso - kms_to_z(3000.0))
+        self.min_z_cut = kms_to_z(3000.0)                   # min z_DLA = z_Ly∞ + min_z_cut
+# determines minimum z_DLA to search
+        self.min_z_dla = lambda wavelengths, z_qso : max(np.min(wavelengths) / physConst.lya_wavelength - 1,observed_wavelengths(physConst.lyman_limit, z_qso) / physConst.lya_wavelength - 1 + kms_to_z(3000.0))
 
 dill.dump_session('parameters.pkl')
