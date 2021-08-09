@@ -62,7 +62,6 @@ def tstfitendmodel(mu,s2,npts=1000,obsvarstddev=25):
     [muhat,s2hat] = fitendmodel(vals,vs)
     return [muhat, s2hat]
 
-#optimization functions
 import numpy as np
 # spectrum_loss: computes the negative log likelihood for centered
 # flux y:
@@ -157,13 +156,24 @@ def spectrum_loss(y,lya_1pz,noise_variance,M,omega2,c_0,tau_0,beta,num_forest_li
 
     B = np.dot(M.T, D_inv_M)
     #print("B before", B, B.shape)
-    B[0::(k + 1)] = B[0::(k + 1)] + 1
+    B = np.reshape(B, B.shape[0]*B.shape[1], order='F')
+    B[0::k+1] = B[0::k+1] + 1
+    B = np.reshape(B, [k, k], order='F')
     #print("B after", B, B.shape)
     L = np.linalg.cholesky(B)
     #print("L", L, L.shape)
     # C = B⁻¹MᵀD⁻¹
-    C = np.linalg.solve(L.T, np.linalg.solve(L, D_inv_M.T))
+    ld = np.linalg.solve(L, D_inv_M.T)
+    #print("\nld", ld, ld.shape)
+    C= np.linalg.solve(L.T, ld)
+    #C = np.linalg.solve(L , np.linalg.solve(L, D_inv_M))
     #print("C", C, C.shape)
+    #inbtw = np.dot(C, y)
+    #print("inbtw", inbtw, inbtw.shape)
+    #doted = np.dot(D_inv_M, inbtw)
+    #print("doted", doted, doted.shape)
+    #subed = D_inv_y - doted
+    #print("subed", subed, subed.shape)
     
     K_inv_y = D_inv_y - np.dot(D_inv_M, np.dot(C, y))
     #print("K_inv_y", K_inv_y, K_inv_y.shape)
@@ -185,7 +195,7 @@ def spectrum_loss(y,lya_1pz,noise_variance,M,omega2,c_0,tau_0,beta,num_forest_li
     #tempty = np.dot(D_inv_M, temp)
     #print("D_inv_M * C * M", tempty, tempty.shape)
     #tempted = D_inv_M - tempty
-    #print("K_inv_M", tempted, tempted.shape)
+    #print("K_inv_M", K_inv_M, K_inv_M.shape)
     #K_inv_M = tempted
     
     temp = np.dot(K_inv_y, M)
@@ -224,16 +234,16 @@ def spectrum_loss(y,lya_1pz,noise_variance,M,omega2,c_0,tau_0,beta,num_forest_li
     K_inv_y = np.reshape(K_inv_y, (K_inv_y.shape[0], 1))
     diag_K_inv = np.reshape(diag_K_inv, (diag_K_inv.shape[0], 1))
     dlog_c_0 = np.dot(-(K_inv_y * da).T, K_inv_y) + np.dot(diag_K_inv.T, da)
-    #temp = np.dot(diag_K_inv.T, da)
+    #temp = np.dot(diag_K_inv, da.T)
     #print("diag_K_inv * da", temp, temp.shape)
     #other = np.dot(-(K_inv_y * da).T, K_inv_y)
     #print("other", other, other.shape)
-    #print("added part \n");
-    #print(np.dot(diag_K_inv.T, da));
-    #print("\n");
-    #print("first part \n");
-    #print(np.dot(-(K_inv_y * da).T, K_inv_y));
-    #print("\n");
+    #print("added part \n")
+    #print(np.dot(diag_K_inv.T, da))
+    #print("\n")
+    #print("first part \n")
+    #print(np.dot(-(K_inv_y * da).T, K_inv_y))
+    #print("\n")
     dlog_c_0 = np.squeeze(dlog_c_0)
     #print("dlog_c_0", dlog_c_0)
 
@@ -278,9 +288,12 @@ def objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances, num_fores
     [num_quasars, num_pixels] = np.shape(centered_rest_fluxes)
 
     k = (len(x) - 3) / num_pixels - 1
+    k = int(k)
     #print("k", k)
     #print("x", x, x.shape)
 
+    #print("num_pixels", num_pixels)
+    #print("k", k)
     M = np.reshape(x[:(num_pixels*k)], [num_pixels, k], order='F')
     #print("M", M, M.shape)
 
@@ -333,7 +346,7 @@ def objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances, num_fores
 
     # apply prior for τ₀ (Kim, et al. 2007)
     #print("f", f, f.shape)
-   # print("dM", dM, dM.shape)
+    #print("dM", dM, dM.shape)
     #print("dlog_omega", dlog_omega, dlog_omega.shape)
     #print("dlog_c_0", dlog_c_0)
     #print("dlog_tau_0", dlog_tau_0)
@@ -355,7 +368,6 @@ def objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances, num_fores
     
     d_M = np.reshape(dM, dM.shape[0]*dM.shape[1], order='F')
 
-    #g = np.array([d_M], [dlog_omega], [dlog_c_0], [dlog_tau_0], [dlog_beta])
     #print("d_M shape", d_M.shape, "dlog_omega shape", dlog_omega.shape)
     g = np.concatenate((d_M, dlog_omega))
     g = np.append(g, [dlog_c_0, dlog_tau_0, dlog_beta])
