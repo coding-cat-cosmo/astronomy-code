@@ -48,6 +48,7 @@ def log_mvnpdf_low_rank(y, mu, M, d):
     y = y - (mu)
     #print("\ny", y, y.shape)
     #d = np.ones(len(d)) * .001 #here
+    #print("\nd", d, d.shape)
     d_inv = 1 / d
     #print("\nd_inv", d_inv, d_inv.shape)
     D_inv_y = d_inv * y
@@ -92,8 +93,7 @@ def log_mvnpdf_low_rank(y, mu, M, d):
 
     return log_p
 
-
-# voigt.c: computes exact Voigt profiles in terms of the complex error function (requires libcerf)
+    # voigt.c: computes exact Voigt profiles in terms of the complex error function (requires libcerf)
 
 #include "mex.h"
 #include <cerf.h>
@@ -355,6 +355,7 @@ nullParams = null_params()
 dlaParams = dla_params()
 normParams = normalization_params()
 learnParams = learning_params()
+flag = flags()
 
 prev_tau_0 = 0.0023
 prev_beta  = 3.65
@@ -448,7 +449,8 @@ redwards_sigma = model['redwards_sigma']
 
 rel = "dr12q/processed/"
 direc = os.path.join(parent_dir, rel)
-lease = "dla_samples"
+#lease = "dla_samples"
+lease = "dlaSamples"
 filename = os.path.join(direc, lease)
 with open(filename, 'rb') as f:
     samples = pickle.load(f)
@@ -497,8 +499,6 @@ all_pixel_mask     =     all_pixel_mask[test_ind]
 #all_thing_ids      =   catalog['thing_ids'][test_ind]
 #more fixing done here since catalog has the full amount but test_ind is only 5000
 all_thing_ids = catalog['thing_ids'][:5000][test_ind]
-#all_thing_ids = all_thing_ids[:5000]
-#all_thing_ids[test_ind]
 
 z_qsos = catalog['z_qsos'][:5000][test_ind]
 dla_inds = catalog['dla_inds']['dr12q_visual']
@@ -515,7 +515,7 @@ num_quasars = len(qso_ind)
 #load('./test/M.mat');
 # preprocess model interpolants
 #my_interpolating_function = RegularGridInterpolator((x, y, z), data)
-print("lengths", rest_wavelengths.shape, mu.shape)
+#print("lengths", rest_wavelengths.shape, mu.shape)
 mu_interpolator = RegularGridInterpolator((rest_wavelengths,), mu)
 #temp = (rest_wavelengths, [x for x in range(k)])
 M_interpolator = RegularGridInterpolator((rest_wavelengths, [x for x in range(nullParams.k)]), M)
@@ -539,6 +539,15 @@ sample_log_posteriors_no_dla  = np.empty((num_quasars, dlaParams.num_dla_samples
 sample_log_posteriors_no_dla[:] = np.NaN
 sample_log_posteriors_dla = np.empty((num_quasars, dlaParams.num_dla_samples))
 sample_log_posteriors_dla[:] = np.NaN
+#DLA_cut = 20.3
+#sub20pt3_ind = (log_nhi_samples < DLA_cut)
+#size = np.count_nonzero(sub20pt3_ind)
+#sample_log_posteriors_dla_sub = np.empty((size))
+#sample_log_posteriors_dla_sub[:] = np.NaN
+#sample_log_posteriors_dla_sup = np.empty((size))
+#sample_log_posteriors_dla_sup[:] = np.NaN
+sample_log_posteriors_dla_sub = []
+sample_log_posteriors_dla_sup = []
 log_posteriors_no_dla = np.empty((num_quasars))
 log_posteriors_no_dla[:] = np.NaN
 log_posteriors_dla_sub = np.empty((num_quasars))
@@ -835,9 +844,9 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
     #print("\nsignal_to_noise")
     #print(signal_to_noise)
     #print(signal_to_noise.shape)
-    print("\nthis_out_wavelengths")
-    print(this_out_wavelengths)
-    print(this_out_wavelengths.shape)
+    #print("\nthis_out_wavelengths")
+    #print(this_out_wavelengths)
+    #print(this_out_wavelengths.shape)
     #print("\nthis_out_flux")
     #print(this_out_flux)
     #print(this_out_flux.shape)
@@ -858,8 +867,8 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
     #    z_qso = offset_samples_qso(i);
     for i in range(dlaParams.num_dla_samples):  #variant redshift in quasars 
         z_qso = offset_samples_qso[i]
-        print("\nz_qso")
-        print(z_qso)
+        #print("\nz_qso")
+        #print(z_qso)
         
         # keep a copy inside the parfor since we are modifying them
         this_wavelengths    = this_out_wavelengths
@@ -1043,9 +1052,9 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
         #print("\nind 3")
         #print(ind)
         #print(len(ind), np.count_nonzero(ind))
-        print("\nthis_wavelengths")
-        print(this_wavelengths)
-        print(this_wavelengths.shape)
+        #print("\nthis_wavelengths")
+        #print(this_wavelengths)
+        #print(this_wavelengths.shape)
         #print("\nthis_rest_wavelengths")
         #print(this_rest_wavelengths)
         #print(this_rest_wavelengths.shape)
@@ -1067,7 +1076,7 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
         #print("\nthis_lyseries_zs")
         #print(this_lyseries_zs)
         #print(this_lyseries_zs.shape)
-        print("\n\n\n")
+        #print("\n\n\n")
         
         for l in range(learnParams.num_forest_lines):
             this_lyseries_zs[:, l] = (this_wavelengths - learnParams.all_transition_wavelengths[l]) / learnParams.all_transition_wavelengths[l]
@@ -1120,8 +1129,8 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
         #sample_log_priors_no_dla(quasar_ind, z_list_ind) = log(.5);
 
         # fprintf_debug('\n');
-        print(' ...     p(   DLA | z_QSO)        : {th:0.3f}\n'.format(th=this_p_dla))
-        print(' ...     p(no DLA | z_QSO)        : {th:0.3f}\n'.format(th=1 - this_p_dla))
+        #print(' ...     p(   DLA | z_QSO)        : {th:0.3f}\n'.format(th=this_p_dla))
+        #print(' ...     p(no DLA | z_QSO)        : {th:0.3f}\n'.format(th=1 - this_p_dla))
 
         # interpolate model onto given wavelengths
         this_mu = mu_interpolator(this_rest_wavelengths)
@@ -1267,7 +1276,7 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
                 
         #    raise
 
-        print(' ... log p(D | z_QSO, no DLA)     : {ts:0.2f}\n'.format(ts=this_sample_log_likelihoods_no_dla[i]))
+        #print(' ... log p(D | z_QSO, no DLA)     : {ts:0.2f}\n'.format(ts=this_sample_log_likelihoods_no_dla[i]))
 
         # Add
         if this_wavelengths.shape[0] == 0:
@@ -1286,21 +1295,21 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
         sample_z_dlas = this_min_z_dlas + (this_max_z_dlas - this_min_z_dlas) * offset_samples
 
         used_z_dla[i] = sample_z_dlas[i]
-        print("\nthis_min_z_dlas")
-        print(this_min_z_dlas)
-        print(this_min_z_dlas.shape)
-        print("\nthis_max_z_dlas")
-        print(this_max_z_dlas)
-        print(this_max_z_dlas.shape)
-        print("\nmin_z_dlas")
-        print(min_z_dlas)
-        print(min_z_dlas.shape)
-        print("\nmax_z_dlas")
-        print(max_z_dlas)
-        print(max_z_dlas.shape)
-        print("\nsample_z_dlas")
-        print(sample_z_dlas)
-        print(sample_z_dlas.shape)
+        #print("\nthis_min_z_dlas")
+        #print(this_min_z_dlas)
+        #print(this_min_z_dlas.shape)
+        #print("\nthis_max_z_dlas")
+        #print(this_max_z_dlas)
+        #print(this_max_z_dlas.shape)
+        #print("\nmin_z_dlas")
+        #print(min_z_dlas)
+        #print(min_z_dlas.shape)
+        #print("\nmax_z_dlas")
+        #print(max_z_dlas)
+        #print(max_z_dlas.shape)
+        #print("\nsample_z_dlas")
+        #print(sample_z_dlas)
+        #print(sample_z_dlas.shape)
         #print("\nused_z_dla")
         #print(used_z_dla)
         #print(used_z_dla.shape)
@@ -1313,31 +1322,257 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
                             np.log10(np.max(this_unmasked_wavelengths)) + instrumentParams.width * instrumentParams.pixel_spacing, instrumentParams.width).T]
 
         padded_wavelengths = np.array([x for ls in padded_wavelengths for x in ls])
-        print("\npadded_wavelengths")
-        print(padded_wavelengths)
-        print(padded_wavelengths.shape)
+        #print("\npadded_wavelengths")
+        #print(padded_wavelengths)
+        #print(padded_wavelengths.shape)
         # to retain only unmasked pixels from computed absorption profile
         ind = np.logical_not(this_pixel_mask[ind])
-        print("\nind")
-        print(ind)
-        print(len(ind), np.count_nonzero(ind))
+        #print("\nind")
+        #print(ind)
+        #print(len(ind), np.count_nonzero(ind))
 
         # compute probabilities under DLA model for each of the sampled
         # (normalized offset, log(N HI)) pairs absorption corresponding to this sample
         #scipy.special.voigt_profile(x, sigma, gamma, out=None)
-        print("sample_z_dlas[i]")
-        print(sample_z_dlas[i])
-        print("nhi_samples[i]")
-        print(nhi_samples[i])
-        print("num_lines", moreParams.num_lines)
+        #print("sample_z_dlas[i]")
+        #print(sample_z_dlas[i])
+        #print("nhi_samples[i]")
+        #print(nhi_samples[i])
+        #print("num_lines", moreParams.num_lines)
         absorption = voigt(padded_wavelengths, sample_z_dlas[i], nhi_samples[i], moreParams.num_lines)
-        print("\nabsorption")
-        print(absorption)
-        print(absorption.shape)
-        break
-    
-    elapsed = time.time() - t
-    print("elapsed")
-    print(elapsed)
-    break
+        #print("\nabsorption")
+        #print(absorption)
+        #print(absorption.shape)
+        # add this line back for implementing pixel masking
+        temp = np.zeros(len(absorption)-len(ind))
+        ind = np.append(ind, temp)
+        ind = np.array(ind, dtype=bool)
+        absorption = absorption[ind]
+        #print("\nabsorption")
+        #print(absorption)
+        #print(absorption.shape)
 
+        # delta z = v / c = H(z) d / c = 70 (km/s/Mpc) * sqrt(0.3 * (1+z)^3 + 0.7) * (5 Mpc) / (3x10^5 km/s) ~ 0.005 at z=3
+        if flag.add_proximity_zone:
+            print("\nreached this")
+            delta_z = (70 * np.sqrt(.3 * (1+z_qso)**3 + .7) * 5) / (3 * 10**5)
+            #print("\ndelta_z")
+            #print(delta_z)
+
+
+        dla_mu = this_mu * absorption
+        dla_M = this_M * absorption[:, None]
+        dla_omega2 = this_omega2 * absorption**2
+        #print("\ndla_mu")
+        #print(dla_mu)
+        #print(dla_mu.shape)
+        #print("\ndla_omega2")
+        #print(dla_omega2)
+        #print(dla_omega2.shape)
+        
+        # Add a penalty for short spectra: the expected reduced chi^2 of each spectral pixel that would have been observed.
+        # Also add an error handler for DLA model likelihood function
+        #try:
+        this_sample_log_likelihoods_dla[i] = log_mvnpdf_low_rank(this_flux, dla_mu, dla_M, dla_omega2 + this_noise_variance) + bw_log_likelihood + rw_log_likelihood - occams
+        #except:
+            #if (strcmp(ME.identifier, 'MATLAB:posdef')):
+        #    this_posdeferror[i] = True
+        #    print('(QSO {qua}, Sample {it}): Matrix must be positive definite. We skip this sample but you need to be careful about this spectrum'.format(qua=quasar_num, it=i))
+        #    continue;
+                
+        #    raise
+        #print("\nthis_sample_log_likelihoods_dla")
+        #print(this_sample_log_likelihoods_dla)
+        #print(this_sample_log_likelihoods_dla.shape)
+        #break
+
+    # to re-evaluate the model posterior for P(DLA| logNHI > 20.3)
+    # we need to select the samples with > DLA_cut and re-calculate the Bayesian model selection
+    DLA_cut = 20.3
+    sub20pt3_ind = (log_nhi_samples < DLA_cut)
+    #print("\nsub20pt3_ind")
+    #print(sub20pt3_ind)
+    #print(len(sub20pt3_ind), np.count_nonzero(sub20pt3_ind))
+
+    # indicing sample_log_posteriors instead of assignments to avoid create a new array
+    sample_log_posteriors_no_dla[quasar_ind] = this_sample_log_priors_no_dla + this_sample_log_likelihoods_no_dla
+    sample_log_posteriors_dla[quasar_ind] = this_sample_log_priors_dla + this_sample_log_likelihoods_dla
+    #print("\nsample_log_posteriors_no_dla")
+    #print(sample_log_posteriors_no_dla)
+    #print(sample_log_posteriors_no_dla.shape)
+    #print("\nsample_log_posteriors_dla")
+    #print(sample_log_posteriors_dla)
+    #print(sample_log_posteriors_dla.shape)
+    #print("\nshape", sample_log_posteriors_dla_sub.shape, this_sample_log_priors_dla[sub20pt3_ind].shape, this_sample_log_likelihoods_dla[sub20pt3_ind].shape)
+    sample_log_posteriors_dla_sub.append(this_sample_log_priors_dla[sub20pt3_ind] + this_sample_log_likelihoods_dla[sub20pt3_ind])
+    sub20pt3_ind = np.logical_not(sub20pt3_ind)
+    sample_log_posteriors_dla_sup.append(this_sample_log_priors_dla[sub20pt3_ind] + this_sample_log_likelihoods_dla[sub20pt3_ind])
+    #print("\nsample_log_posteriors_dla_sub")
+    #print(sample_log_posteriors_dla_sub)
+    #print(len(sample_log_posteriors_dla_sub))
+    #print("\nsample_log_posteriors_dla_sup")
+    #print(sample_log_posteriors_dla_sup)
+    #print(len(sample_log_posteriors_dla_sup))
+
+    # use nanmax to avoid NaN potentially in the samples
+    # not sure whether the z code has many NaNs in array; the multi-dla codes have many NaNs
+    max_log_likelihood_no_dla = np.nanmax(sample_log_posteriors_no_dla[quasar_ind])
+    max_log_likelihood_dla = np.nanmax(sample_log_posteriors_dla[quasar_ind])
+    max_log_likelihood_dla_sub = np.nanmax(sample_log_posteriors_dla_sub[quasar_ind])
+    max_log_likelihood_dla_sup = np.nanmax(sample_log_posteriors_dla_sup[quasar_ind])
+    #print("\nmax_log_likelihood_no_dla")
+    #print(max_log_likelihood_no_dla)
+    #print("\nmax_log_likelihood_dla")
+    #print(max_log_likelihood_dla)
+    #print("\nmax_log_likelihood_dla_sub")
+    #print(max_log_likelihood_dla_sub)
+    #print("\nmax_log_likelihood_dla_sup")
+    #print(max_log_likelihood_dla_sup)
+
+    probabilities_no_dla = np.exp(sample_log_posteriors_no_dla[quasar_ind] - max_log_likelihood_no_dla)
+    probabilities_dla    = np.exp(sample_log_posteriors_dla[quasar_ind] - max_log_likelihood_dla)
+    probabilities_dla_sub = np.exp(sample_log_posteriors_dla_sub[quasar_ind] - max_log_likelihood_dla_sub)
+    probabilities_dla_sup = np.exp(sample_log_posteriors_dla_sup[quasar_ind] - max_log_likelihood_dla_sup)
+    #print("\nprobabilities_no_dla")
+    #print(probabilities_no_dla)
+    #print("\nprobabilities_dla")
+    #print(probabilities_dla)
+    #print("\nprobabilites_dla_sub")
+    #print(probabilities_dla_sub)
+    #print("\nprobabilites_dla_sup")
+    #print(probabilities_dla_sup)
+
+    I = np.nanargmax(probabilities_no_dla + probabilities_dla)
+    #print("\nI")
+    #print(I)
+
+    z_map[quasar_ind] = offset_samples_qso[I]                                  #MAP estimate
+    #print("\nz_map")
+    #print(z_map)
+    #print(z_map.shape)
+
+    I = np.nanargmax(probabilities_dla)
+    z_dla_map[quasar_ind] = used_z_dla[I]
+    n_hi_map[quasar_ind] = nhi_samples[I]
+    log_nhi_map[quasar_ind] = log_nhi_samples[I]
+    #print("\nI")
+    #print(I)
+    #print("\nz_dla_map")
+    #print(z_dla_map)
+    #print(z_dla_map.shape)
+    #print("\nn_hi_map")
+    #print(n_hi_map)
+    #print(n_hi_map.shape)
+    #print("\nlog_nhi_map")
+    #print(log_nhi_map)
+    #print(log_nhi_map.shape)
+
+    log_posteriors_no_dla[quasar_ind] = np.log(np.mean(probabilities_no_dla)) + max_log_likelihood_no_dla   #Expected
+    log_posteriors_dla[quasar_ind] = np.log(np.mean(probabilities_dla)) + max_log_likelihood_dla            #Expected
+    log_posteriors_dla_sub[quasar_ind] = np.log(np.mean(probabilities_dla_sub)) + max_log_likelihood_dla_sub #Expected
+    log_posteriors_dla_sup[quasar_ind] = np.log(np.mean(probabilities_dla_sup)) + max_log_likelihood_dla_sup #Expected
+    #print("\nlog_posteriors_no_dla")
+    #print(log_posteriors_no_dla)
+    #print(log_posteriors_no_dla.shape)
+    #print("\nlog_posteriors_dla")
+    #print(log_posteriors_dla)
+    #print(log_posteriors_dla.shape)
+    #print("\nlog_posteriors_dla_sub")
+    #print(log_posteriors_dla_sub)
+    #print(log_posteriors_dla_sub.shape)
+    #print("\nlog_posteriors_dla_sup")
+    #print(log_posteriors_dla_sup)
+    #print(log_posteriors_dla_sup.shape)
+
+    elapsed = time.time() - t
+    print(' took {tm:0.3f}s.\n'.format(tm=elapsed))
+    
+    # z-estimation checking printing at runtime
+    zdiff = z_map[quasar_ind] - z_qsos[quasar_num]
+    #print("\nzdiff")
+    #print(zdiff)
+    #print(zdiff.shape)
+    if quasar_ind % 1 == 0:
+        elapsed = time.time() - t
+        print('Done QSO {first} of {tot} in {tm:0.3f} s. True z_QSO = {tru:0.4f}, I={isi} map={mp:0.4f} dif = {di:.04f}\n'.format(first=quasar_ind+1, tot=num_quasars, tm=elapsed, tru=z_qsos[quasar_num], isi=I, mp=z_map[quasar_ind], di=zdiff))  
+
+    #print(' ... log p(DLA | D, z_QSO)        : {fn:0.2f}\n'.format(fn=log_posteriors_dla[quasar_ind]))
+
+    elapsed = time.time() - t
+    print(' took {tm:0.3f}s. (z_map = {mp:0.4f})\n'.format(tm=elapsed, mp=z_map[quasar_ind]))
+    #if mod(quasar_ind, 50) == 0
+    #    save(['./checkpointing/curDLA_', optTag, '.mat'], 'log_posteriors_dla_sub', 'log_posteriors_dla_sup', 'log_posteriors_dla', 'log_posteriors_no_dla', 'z_true', 'dla_true', 'quasar_ind', 'quasar_num',...
+#'used_z_dla', 'nhi_samples', 'offset_samples_qso', 'offset_samples', 'z_map', 'signal_to_noise', 'z_dla_map', 'n_hi_map')
+
+    # record posdef error;
+    # count number of posdef errors; if it is == num_dla_samples, then we have troubles.
+    all_posdeferrors[quasar_ind] = sum(this_posdeferror)
+    #print("\nall_posdeferrors")
+    #print(all_posdeferrors)
+    #print(all_posdeferrors.shape)
+#end
+
+    
+    #elapsed = time.time() - t
+    #print("elapsed")
+    #print(elapsed)
+    #break
+    
+# compute model posteriors in numerically safe manner
+combined = np.array(([log_posteriors_no_dla, log_posteriors_dla_sub, log_posteriors_dla_sup])).T
+max_log_posteriors = np.nanmax(combined, axis=1)
+print("\nmax_log_posteriors")
+print(max_log_posteriors)
+
+model_posteriors = np.exp(combined - max_log_posteriors[:,None])
+print("\nmodel_posteriors")
+print(model_posteriors)
+print(model_posteriors.shape)
+
+model_posteriors = model_posteriors / np.nansum(model_posteriors)
+print("\nmodel_posteriors after")
+print(model_posteriors)
+print(model_posteriors.shape)
+
+p_no_dlas = model_posteriors[:, 0]
+p_dlas    = 1 - p_no_dlas
+print("\np_no_dlas")
+print(p_no_dlas)
+print("\np_dlas")
+print(p_dlas)
+
+# save results
+variables_to_save = {'training_release':training_release, 'training_set_name':training_set_name,
+                    'dla_catalog_name':dla_catalog_name, 'release':release, 'test_set_name':test_set_name,
+                    'test_ind':test_ind, 'prior_z_qso_increase':modelParams.prior_z_qso_increase, 'max_z_cut':moreParams.max_z_cut,
+                    'num_lines':moreParams.num_lines, 'min_z_dlas':min_z_dlas, 'max_z_dlas':max_z_dlas, # you need to save DLA search length to compute CDDF
+                    'sample_log_posteriors_no_dla':sample_log_posteriors_no_dla, 'sample_log_posteriors_dla':sample_log_posteriors_dla,
+                    'sample_log_posteriors_dla_sub':sample_log_posteriors_dla_sub, 'sample_log_posteriors_dla_sup':sample_log_posteriors_dla_sup,
+                    'log_posteriors_no_dla':log_posteriors_no_dla, 'log_posteriors_dla':log_posteriors_dla,
+                    'log_posteriors_dla_sub':log_posteriors_dla_sub, 'log_posteriors_dla_sup':log_posteriors_dla_sup,
+                    'model_posteriors':model_posteriors, 'p_no_dlas':p_no_dlas, 'p_dlas':p_dlas, 'z_map':z_map,
+                    'z_true':z_true, 'dla_true':dla_true, 'z_dla_map':z_dla_map, 'n_hi_map':n_hi_map, 'log_nhi_map':log_nhi_map,
+                    'signal_to_noise':signal_to_noise, 'all_thing_ids':all_thing_ids, 'all_posdeferrors':all_posdeferrors,
+                    'all_exceptions':all_exceptions, 'qso_ind':qso_ind}
+
+    # 'sample_log_priors_no_dla':sample_log_priors_no_dla, 'sample_log_priors_dla':sample_log_priors_dla,
+    # 'sample_log_likelihoods_no_dla', 'sample_log_likelihoods_dla', ...
+print("\nvariables_to_save")
+print(variables_to_save)
+    
+direct = 'dr12q/processed'
+pathName = os.path.join(parent_dir, direct)
+
+filename = '{dirt}/processed_qsos_{tst}-{opt}_{beg}-{en}_norm_{minl}-{maxl}'.format(dirt=direct, tst=test_set_name, opt=100, beg=qso_ind[0], en=qso_ind[0] + len(qso_ind), minl=normParams.normalization_min_lambda, maxl=normParams.normalization_max_lambda)
+
+print("\nfilename")
+print(filename)
+#save(filename, variables_to_save{:}, '-v7.3');
+# Open a file for writing data
+file_handler = open(fileName, 'wb')
+
+# Dump the data of the object into the file
+pickle.dump(variables_to_save, file_handler)
+
+# close the file handler to release the resources
+file_handler.close()
