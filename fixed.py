@@ -102,7 +102,6 @@ instrument_profile = np.array([2.17460992138080811e-03, 4.11623059580451742e-02,
 #double z, N, velocity, total;
 #int num_lines, i, j, k;
 #mwSize num_points;
-
 def voigt(LAMBDAS_ARG, Z_ARG, N_ARG, NUM_LINES_ARG=31):
 
 
@@ -130,6 +129,7 @@ def voigt(LAMBDAS_ARG, Z_ARG, N_ARG, NUM_LINES_ARG=31):
     #multipliers = []
     #for i in range(num_lines):
         #multipliers.append(c / (transition_wavelengths[i] * (1 + z)) / 100000000)
+
     multipliers = c / (transition_wavelengths * (1+z)) / 100000000
 
     #/* compute raw Voigt profile */
@@ -147,8 +147,6 @@ def voigt(LAMBDAS_ARG, Z_ARG, N_ARG, NUM_LINES_ARG=31):
     subtotal = -leading_constants[None,:] * voigt_profile(velocity,sigma,gammas[None,:])
     total = subtotal.sum(axis=1)
     raw_profile = np.exp(N*total)
-    #print("\ndiff:")
-    #print(np.max(np.abs((raw_profile-newRaw_profile))))
 
     #print("\nsum_points before", num_points)
     #print("\nsum_points after", num_points - 2 * width)
@@ -163,10 +161,6 @@ def voigt(LAMBDAS_ARG, Z_ARG, N_ARG, NUM_LINES_ARG=31):
    #         k+=1
             
     profile = np.convolve(raw_profile, instrument_profile, mode='valid')
-    #print("\ndiff:")
-    #print(profile.shape)
-    #print(newProfile.shape)
-    #print(np.max(np.abs((profile-newProfile))))
 
     return profile
 
@@ -941,6 +935,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
 from scipy.special import voigt_profile
+#import cProfile
 #from voigt import voigt
 
 #dill.load_session('parameters.pkl')
@@ -1641,13 +1636,16 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
                       quasar_ind, offset_samples, nhi_samples, min_z_dlas,
                       max_z_dlas, this_sample_log_priors_no_dla, this_sample_log_priors_dla,
                       this_sample_log_likelihoods_no_dla, this_sample_log_likelihoods_dla, used_z_dla)
-    with Pool(10) as p: # with index
+    #pr = cProfile.Profile()
+    #pr.enable()
+    with Pool(20) as p: # with index
         values = p.map(args, [x for x in range(dlaParams.num_dla_samples)])
-    #for i in range(2):  #variant redshift in quasars 
+    #for i in range(dlaParams.num_dla_samples):  #variant redshift in quasars 
         #[fluxes, rest_wavelengths, min_z_dlas, max_z_dlas, this_p_dlas, used_z_dla,
         #this_sample_log_priors_no_dla, this_sample_log_priors_dla, this_sample_log_likelihoods_no_dla,
          #this_sample_log_likelihoods_dla, i]
     #    values = args(i)
+    #pr.disable()
     
     for val in values:
         fluxes.append(val.fluxes)
@@ -1674,36 +1672,36 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
 
     # to re-evaluate the model posterior for P(DLA| logNHI > 20.3)
     # we need to select the samples with > DLA_cut and re-calculate the Bayesian model selection
-    print("\nfluxes")
-    print(fluxes)
-    print(len(fluxes))
-    print("\nrest_wavelengths")
-    print(rest_wavelengths)
-    print(len(rest_wavelengths))
-    print("\nmin_z_dlas")
-    print(min_z_dlas)
-    print(min_z_dlas.shape)
-    print("\nmax_z_dlas")
-    print(max_z_dlas)
-    print(max_z_dlas.shape)
-    print("\nthis_p_dlas")
-    print(this_p_dlas)
-    print(this_p_dlas.shape)
-    print("\nused_z_dla")
-    print(used_z_dla)
-    print(used_z_dla.shape)
-    print("\nthis_sample_log_priors_no_dla")
-    print(this_sample_log_priors_no_dla)
-    print(this_sample_log_priors_no_dla.shape)
-    print("\nthis_sample_log_priors_dla")
-    print(this_sample_log_priors_dla)
-    print(this_sample_log_priors_dla.shape)
-    print("\nthis_sample_log_likelihoods_no_dla")
-    print(this_sample_log_likelihoods_no_dla)
-    print(this_sample_log_likelihoods_no_dla.shape)
-    print("\nthis_sample_log_likelihoods_dla")
-    print(this_sample_log_likelihoods_dla)
-    print(this_sample_log_likelihoods_no_dla.shape)
+    #print("\nfluxes")
+    #print(fluxes)
+    #print(len(fluxes))
+    #print("\nrest_wavelengths")
+    #print(rest_wavelengths)
+    #print(len(rest_wavelengths))
+    #print("\nmin_z_dlas")
+    #print(min_z_dlas)
+    #print(min_z_dlas.shape)
+    #print("\nmax_z_dlas")
+    #print(max_z_dlas)
+    #print(max_z_dlas.shape)
+    #print("\nthis_p_dlas")
+    #print(this_p_dlas)
+    #print(this_p_dlas.shape)
+    #print("\nused_z_dla")
+    #print(used_z_dla)
+    #print(used_z_dla.shape)
+    #print("\nthis_sample_log_priors_no_dla")
+    #print(this_sample_log_priors_no_dla)
+    #print(this_sample_log_priors_no_dla.shape)
+    #print("\nthis_sample_log_priors_dla")
+    #print(this_sample_log_priors_dla)
+    #print(this_sample_log_priors_dla.shape)
+    #print("\nthis_sample_log_likelihoods_no_dla")
+    #print(this_sample_log_likelihoods_no_dla)
+    #print(this_sample_log_likelihoods_no_dla.shape)
+    #print("\nthis_sample_log_likelihoods_dla")
+    #print(this_sample_log_likelihoods_dla)
+    #print(this_sample_log_likelihoods_no_dla.shape)
     DLA_cut = 20.3
     sub20pt3_ind = (log_nhi_samples < DLA_cut)
     #print("\nsub20pt3_ind")
@@ -1909,3 +1907,4 @@ fileName = os.path.join(parent_dir, filename)
 
 # close the file handler to release the resources
 #file_handler.close()
+#pr.print_stats(sort='tottime')
