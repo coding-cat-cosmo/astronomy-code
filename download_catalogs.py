@@ -890,11 +890,11 @@ parent_dir = str(p.parent)
 release = "dr12q/processed/catalog"
 filename = os.path.join(parent_dir, release)
 #getting back pickled data
-try:
-    with open(filename,'rb') as f:
-        variables_to_load = pickle.load(f)
-except:
-    print(variables_to_load)
+#try:
+with open(filename,'rb') as f:
+    variables_to_load = pickle.load(f)
+#except:
+#    print(variables_to_load)
     
 z_qsos = variables_to_load["z_qsos"]
 plates = variables_to_load["plates"]
@@ -904,7 +904,7 @@ filter_flags = variables_to_load["filter_flags"]
 
 num_quasars = len(z_qsos)
 #for debugging purposes, will be shortened to 5000
-num_quasars = 5000
+#num_quasars = 5000
 
 all_wavelengths    =  []
 all_flux           =  []
