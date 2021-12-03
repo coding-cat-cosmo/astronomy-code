@@ -1,4 +1,4 @@
-import math
+#import math
 import scipy.optimize as opt
 
 def fitendmu(endsigma2,obs,obsnoisevars,precompdens=None):
@@ -372,7 +372,7 @@ def objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances, num_fores
 
 
 
-'''training_release  = 'dr12q';http://localhost:8888/notebooks/Desktop/Research_Code/test/learning.ipynb#
+'''training_release  = 'dr12q';
 dla_catalog_name = 'dr9q_concordance';
 train_ind = ...
     [' catalog.in_dr9                     & ' ...
@@ -687,7 +687,7 @@ import os
 from scipy import interpolate
 from scipy import optimize
 #import h5py
-import math
+#import math
 from sklearn.decomposition import IncrementalPCA
 
 dill.load_session("parameters.pkl")
@@ -740,7 +740,7 @@ train_ind = in_dr9 & filtered_flags & los_inds & dla_inds
 #train_ind = comp_mat
 #truncation for debugging but before does something
 z_qsos             =        catalog['z_qsos'][train_ind]
-z_qsos = z_qsos[:443]
+#z_qsos = z_qsos[:443]
 print("train_ind", train_ind, len(train_ind))
 print("z_qsos", z_qsos, len(z_qsos))
 
@@ -773,7 +773,7 @@ with open(filename, 'rb') as f:
 #train_ind = np.bitwise_and(np.bitwise_and(np.bitwise_and(catalog['in_dr9'], (catalog['filter_flags']==0)), catalog['los_inds']['dr9q_concordance']), ~catalog['dla_inds']['dr9q_concordance'])
 #truncation for debugging but before does something
 #z_qsos             =        catalog['z_qsos'][train_ind]
-train_ind = train_ind[:5000]
+#train_ind = train_ind[:5000]
 #train_ind[500:] = False 
 #print('\ntrain_ind')
 #print(train_ind)
@@ -818,8 +818,8 @@ all_pixel_mask     =     all_pixel_mask[train_ind]
 #deallocating memory i think
 preqsos = 0
 
-#num_quasars = len(z_qsos)
-num_quasars = len(all_wavelengths)
+num_quasars = len(z_qsos)
+#num_quasars = len(all_wavelengths)
 print("num_quasars", num_quasars)
 
 #print("\nlength of values")
@@ -1504,7 +1504,7 @@ from scipy import interpolate
 from scipy.stats import uniform
 from scipy import stats
 import scipy.integrate as integrate
-from scipy.stats import norm
+#from scipy.stats import norm
 from scipy.optimize import root_scalar
 
 #dill.load_session("parameters.pkl")
@@ -1613,7 +1613,7 @@ x = np.linspace(dlaParams.fit_min_log_nhi, dlaParams.fit_max_log_nhi, num=1000)
 #kde_pdf = ksdensity(log_nhis, x);
 kde = stats.gaussian_kde(log_nhis)
 kde_pdf = kde(x)
-f = np.polyfit(x, np.log(kde_pdf), 2);
+f = np.polyfit(x, np.log(kde_pdf), 2)
 
 
 extrapolate_min_log_nhi = 19.0 # normalization range for the extrapolated region convert this to a PDF and normalize
@@ -1622,7 +1622,7 @@ if not flag.extrapolate_subdla:
     Z = integrate.quad(unnormalized_pdf, dlaParams.fit_min_log_nhi, 25.0)
     Z = Z[0]
 else:
-    unnormalized_pdf = lambda nhi : np.exp(np.polyval(f, nhi))*np.heaviside(nhi-20.03269,0)+exp(np.polyval(f,20.03269))*(1-np.heaviside(nhi-20.03269,0))
+    unnormalized_pdf = lambda nhi : np.exp(np.polyval(f, nhi))*np.heaviside(nhi-20.03269,0)+np.exp(np.polyval(f,20.03269))*(1-np.heaviside(nhi-20.03269,0))
     Z = integrate.quad(unnormalized_pdf, dlaParams.extrapolate_min_log_nhi, 25.0)
     
 # create the PDF of the mixture between the uniform distribution and the distribution fit to the data
