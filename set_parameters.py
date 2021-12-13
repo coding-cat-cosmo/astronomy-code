@@ -1,8 +1,5 @@
 import pickle
 import dill
-
-import pickle
-import dill
 import numpy as np
 
 #flags for changes
@@ -107,16 +104,16 @@ class null_params:
 class learning_params:
     def __init__(self):
         self.num_forest_lines = 6
-        self.all_transition_wavelengths = [1215.6701, 1025.7223, 972.5368, 949.7431, 937.8035,
+        self.all_transition_wavelengths = np.array([1215.6701, 1025.7223, 972.5368, 949.7431, 937.8035,
                                            930.7483, 926.2257, 923.1504, 920.9631, 919.3514,
                                            918.1294, 917.1806, 916.429, 915.824, 915.329, 914.919,
                                            914.576, 914.286, 914.039,913.826, 913.641, 913.480,
                                            913.339, 913.215, 913.104, 913.006, 912.918, 912.839,
-                                           912.768, 912.703, 912.645] # transition wavelengths, Å
-        self.all_oscillator_strengths = [0.416400, 0.079120, 0.029000, 0.013940, 0.007799, 0.004814, 0.003183, 0.002216, 0.001605,
+                                           912.768, 912.703, 912.645]) # transition wavelengths, Å
+        self.all_oscillator_strengths = np.array([0.416400, 0.079120, 0.029000, 0.013940, 0.007799, 0.004814, 0.003183, 0.002216, 0.001605,
                             0.00120, 0.000921, 0.0007226, 0.000577, 0.000469, 0.000386, 0.000321, 0.000270, 0.000230,
                             0.000197, 0.000170, 0.000148, 0.000129, 0.000114, 0.000101, 0.000089, 0.000080,
-                            0.000071, 0.000064, 0.000058, 0.000053, 0.000048]
+                            0.000071, 0.000064, 0.000058, 0.000053, 0.000048])
         # oscillator strengths
         self.lya_oscillator_strength = 0.416400
         self.lyb_oscillator_strength = 0.079120
@@ -160,4 +157,22 @@ class more_dla_params:
 # determines minimum z_DLA to search
         self.min_z_dla = lambda wavelengths, z_qso : max(np.min(wavelengths) / physConst.lya_wavelength - 1,observed_wavelengths(physConst.lyman_limit, z_qso) / physConst.lya_wavelength - 1 + kms_to_z(3000.0))
 
-dill.dump_session('parameters.pkl')
+#dill.dump_session('parameters.pkl')
+preParams = preproccesing_params()
+loadParams = file_loading()
+modelParams = model_params()
+instrumentParams = instrument_params()
+optParams = optimization_params()
+moreParams = more_dla_params()
+nullParams = null_params()
+dlaParams = dla_params()
+normParams = normalization_params()
+learnParams = learning_params()
+flag = flags()
+parameters = {"preParams": preParams, "loadParams": loadParams, "modelParams": modelParams,
+              "instrumentParams": instrumentParams, "optParams": optParams, "moreParams": moreParams, 
+              "nullParams": nullParams, "dlaParams": dlaParams, "normParams":normParams,
+               "learnParams": learnParams, "flag": flag}
+
+with open('parameters.pkl', 'wb') as handle:
+    dill.dump(parameters, handle, protocol=pickle.HIGHEST_PROTOCOL)
