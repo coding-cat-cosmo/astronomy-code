@@ -399,10 +399,10 @@ class inputs:
 
         if (np.count_nonzero(this_rest_wavelengths) < 1):
             print(' took {tc:0.3f}s.\n'.format(tc=time.time() - t))
-            #self.fluxes.append(0)
-            #self.rest_wavelengths.append(0)
-            self.fluxes = 0
-            self.rest_wavelengths = 0
+            self.fluxes.append(0)
+            self.rest_wavelengths.append(0)
+            #self.fluxes = 0
+            #self.rest_wavelengths = 0
 
             values = outputs(self.fluxes, self.rest_wavelengths, self.min_z_dlas, self.max_z_dlas, self.this_p_dlas,
                              self.this_sample_log_priors_no_dla, self.this_sample_log_priors_dla, self.used_z_dla,
@@ -410,10 +410,10 @@ class inputs:
 
             return values
 
-        #self.fluxes.append(this_flux)
-        #self.rest_wavelengths.append(this_rest_wavelengths)
-        self.fluxes = this_flux
-        self.rest_wavelengths = this_rest_wavelengths
+        self.fluxes.append(this_flux)
+        self.rest_wavelengths.append(this_rest_wavelengths)
+        #self.fluxes = this_flux
+        #self.rest_wavelengths = this_rest_wavelengths
 
         this_lya_zs = (this_wavelengths - physConst.lya_wavelength) / physConst.lya_wavelength
 
@@ -1724,38 +1724,38 @@ for quasar_ind in range(q_ind_start, num_quasars): #quasar list
                       this_sample_log_likelihoods_no_dla, this_sample_log_likelihoods_dla, used_z_dla)
     #pr = cProfile.Profile()
     #pr.enable()
-    with Pool(5) as p: # with index
-        values = p.map(args, range(dlaParams.num_dla_samples))
-    #for i in range(dlaParams.num_dla_samples):  #variant redshift in quasars 
+    #with Pool(5) as p: # with index
+    #    values = p.map(args, range(dlaParams.num_dla_samples))
+    for i in range(dlaParams.num_dla_samples):  #variant redshift in quasars 
         #[fluxes, rest_wavelengths, min_z_dlas, max_z_dlas, this_p_dlas, used_z_dla,
         #this_sample_log_priors_no_dla, this_sample_log_priors_dla, this_sample_log_likelihoods_no_dla,
          #this_sample_log_likelihoods_dla, i]
-    #    values = args(i)
+        values = args(i)
     #pr.disable()
     
-    for val in values:
-        fluxes.append(val.fluxes)
-        rest_wavelengths.append(val.rest_wavelengths)
-        min_z_dlas[quasar_ind, val.i] = val.min_z_dlas[quasar_ind, val.i]
-        max_z_dlas[quasar_ind, val.i] = val.max_z_dlas[quasar_ind, val.i]
-        this_p_dlas[val.i] = val.this_p_dlas[val.i]
-        used_z_dla[val.i] = val.used_z_dla[val.i]
-        this_sample_log_priors_no_dla[val.i] = val.this_sample_log_priors_no_dla[val.i]
-        this_sample_log_priors_dla[val.i] = val.this_sample_log_priors_dla[val.i]
-        this_sample_log_likelihoods_no_dla[val.i] = val.this_sample_log_likelihoods_no_dla[val.i]
-        this_sample_log_likelihoods_dla[val.i] = val.this_sample_log_likelihoods_dla[val.i]
+    #for val in values:
+    #    fluxes.append(val.fluxes)
+    #    rest_wavelengths.append(val.rest_wavelengths)
+    #    min_z_dlas[quasar_ind, val.i] = val.min_z_dlas[quasar_ind, val.i]
+    #    max_z_dlas[quasar_ind, val.i] = val.max_z_dlas[quasar_ind, val.i]
+    #    this_p_dlas[val.i] = val.this_p_dlas[val.i]
+    #    used_z_dla[val.i] = val.used_z_dla[val.i]
+    #    this_sample_log_priors_no_dla[val.i] = val.this_sample_log_priors_no_dla[val.i]
+    #    this_sample_log_priors_dla[val.i] = val.this_sample_log_priors_dla[val.i]
+    #    this_sample_log_likelihoods_no_dla[val.i] = val.this_sample_log_likelihoods_no_dla[val.i]
+    #    this_sample_log_likelihoods_dla[val.i] = val.this_sample_log_likelihoods_dla[val.i]
         
     #
-    #fluxes = values.fluxes
-    #rest_wavelengths = values.rest_wavelengths
-    #min_z_dlas = values.min_z_dlas
-    #max_z_dlas = values.max_z_dlas
-    #this_p_dlas = values.this_p_dlas
-    #used_z_dla = values.used_z_dla
-    #this_sample_log_priors_no_dla = values.this_sample_log_priors_no_dla
-    #this_sample_log_priors_dla = values.this_sample_log_priors_dla
-    #this_sample_log_likelihoods_no_dla = values.this_sample_log_likelihoods_no_dla
-    #this_sample_log_likelihoods_dla = values.this_sample_log_likelihoods_dla
+    fluxes = values.fluxes
+    rest_wavelengths = values.rest_wavelengths
+    min_z_dlas = values.min_z_dlas
+    max_z_dlas = values.max_z_dlas
+    this_p_dlas = values.this_p_dlas
+    used_z_dla = values.used_z_dla
+    this_sample_log_priors_no_dla = values.this_sample_log_priors_no_dla
+    this_sample_log_priors_dla = values.this_sample_log_priors_dla
+    this_sample_log_likelihoods_no_dla = values.this_sample_log_likelihoods_no_dla
+    this_sample_log_likelihoods_dla = values.this_sample_log_likelihoods_dla
 
     # to re-evaluate the model posterior for P(DLA| logNHI > 20.3)
     # we need to select the samples with > DLA_cut and re-calculate the Bayesian model selection
