@@ -100,6 +100,9 @@ import dill
 from pathlib import Path
 import numpy as np
 import os
+import resource
+soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
 
 #dill.load_session("parameters.pkl")
 
@@ -109,8 +112,14 @@ def read_spec(plate, mjd, fiber_id, directory):
     BRIGHTSKY = 23
     
     #measurements = fitsread(filename, 'binarytable',  1, 'tablecolumns', 1:4)
-    with fits.open(fileName) as hdl:
-        measurements = hdl[1].data # assuming the first extension is a table
+    try:
+        hdl = fits.open(fileName, memmap=False)
+        measurements = hdl[1].data
+    finally:
+        hdl.close()
+
+    #with fits.open(fileName) as hdl:
+    #    measurements = hdl[1].data # assuming the first extension is a table
     #print(measurements.dtype.names)
     
     # coadded calibrated flux  10^-17 erg s^-1 cm^-2 A^-1
@@ -137,7 +146,7 @@ def read_spec(plate, mjd, fiber_id, directory):
     # (FULLREJECT, NOSKY, NODATA); additionally remove pixels with BRIGHTSKY set
     pixel_mask = (inverse_noise_variance==0) | (and_mask & pow(2,BRIGHTSKY))
     
-    return [wavelengths, flux, noise_variance, pixel_mask];
+    return [wavelengths, flux, noise_variance, pixel_mask]
 
 #p = Path(os.getcwd())
 #parent_dir = str(p.parent)
@@ -152,26 +161,29 @@ def read_spec(plate, mjd, fiber_id, directory):
 # preload_qsos: loads spectra from SDSS FITS files, applies further
 # filters, and applies some basic preprocessing such as normalization
 # and truncation to the region of interest
-preParams = preproccesing_params()
+with open('parameters.pkl', 'rb') as handle:
+    params = dill.load(handle)
+
+preParams = params['preParams']
 preParams.min_num_pixels = 200
-normParams = normalization_params()
+normParams = params['normParams']
 normParams.normalization_min_lambda = 1176
 normParams.normalization_max_lambda = 1256
-loading = file_loading()
+loading = params['loadParams']
 loading.loading_min_lambda = 910
 loading.loading_max_lambda = 1217
-nullParams = null_params()
+nullParams = params['nullParams']
 
 p = Path(os.getcwd())
 parent_dir = str(p.parent)
 release = "dr12q/processed/catalog"
 filename = os.path.join(parent_dir, release)
 #getting back pickled data
-try:
-    with open(filename,'rb') as f:
-        variables_to_load = pickle.load(f)
-except:
-    print(variables_to_load)
+#try:
+with open(release,'rb') as f:
+    variables_to_load = pickle.load(f)
+#except:
+#    print(variables_to_load)
     
 z_qsos = variables_to_load["z_qsos"]
 plates = variables_to_load["plates"]
@@ -181,7 +193,7 @@ filter_flags = variables_to_load["filter_flags"]
 
 num_quasars = len(z_qsos)
 #for debugging purposes, will be shortened to 5000
-num_quasars = 5000
+#num_quasars = 5000
 
 all_wavelengths    =  []
 all_flux           =  []
@@ -207,7 +219,7 @@ for i in range(num_quasars):
     #print(mjds[0])
     #print('\nfiber_ids')
     #print(fiber_ids[0])
-    [this_wavelengths, this_flux, this_noise_variance, this_pixel_mask] = read_spec(plates[i], mjds[i], fiber_ids[i], directory)
+    [this_wavelengths, this_flux, this_noise_variance, this_pixel_mask] = read_spec(plates[i], mjds[i], fiber_ids[i], release)
      # do not normalize flux: this is done in the learning and processing code.
     ind = (this_wavelengths >= (nullParams.min_lambda * (preParams.z_qso_cut) + 1)) & (this_wavelengths <= (nullParams.max_lambda * (preParams.z_qso_training_max_cut) + 1)) & (np.logical_not(this_pixel_mask))
     
@@ -245,18 +257,22 @@ variables_to_save = {'loading_min_lambda' : loading.loading_min_lambda, 'loading
 # Open a file for writing data
 filename = os.path.join(parent_dir, "dr12q/processed")
 filepath = os.path.join(filename, "preloaded_qsos")
-file_handler = open(filepath, 'wb')
+filepath = "dr12q/processed/preloaded_qsos"
+#file_handler = open(filepath, 'wb')
 
 # Dump the data of the object into the file
-pickle.dump(variables_to_save, file_handler)
+#pickle.dump(variables_to_save, file_handler)
 
 # close the file handler to release the resources
-file_handler.close()
+#file_handler.close()
+with open(filepath, 'wb') as handle:
+    dill.dump(variables_to_save, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 new_filter_flags = filter_flags
 
 # write new filter flags to catalog
 filepath = os.path.join(filename, "catalog")
+filepath = "dr12q/processed/catalog"
 #getting back pickled data
 #try:
 with open(filepath,'rb') as f:

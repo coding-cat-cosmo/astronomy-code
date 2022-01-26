@@ -690,19 +690,25 @@ from scipy import optimize
 #import math
 from sklearn.decomposition import IncrementalPCA
 
-dill.load_session("parameters.pkl")
-preParams = preproccesing_params()
-normParams = normalization_params()
-learnParams = learning_params()
-physParams = physical_constants()
-loading = file_loading()
-optParams = optimization_params()
-nullParams = null_params()
+#dill.load_session("parameters.pkl")
+with open('parameters.pkl', 'rb') as handle:
+    params = dill.load(handle)
+
+preParams = params['preParams']
+normParams = params['normParams']
+learnParams = params['learnParams']
+physParams = params['physParams']
+loading = params['loadParams']
+optParams = params['optParams']
+nullParams = params['nullParams']
 nullParams.min_lambda = 910             # range of rest wavelengths to       Å
 nullParams.max_lambda = 3000            #   model
 nullParams.dlambda = 0.25               # separation of wavelength grid      Å
 nullParams.k = 20                       # rank of non-diagonal contribution
 nullParams.max_noise_variance = 4**2     # maximum pixel noise allowed during model training
+emitted_wavelengths = params['emitted_wavelengths']
+observed_wavelengths = params['observed_wavelengths']
+kms_to_z = params['kms_to_z']
 
 # optimization parameters
 initial_c     = 0.1                          # initial guess for c
@@ -722,11 +728,11 @@ release = "dr12q/processed/catalog"
 filename = os.path.join(parent_dir, release)
 #getting back pickled data for catalog
 #try:
-with open(filename,'rb') as f:
+with open(release,'rb') as f:
     catalog = pickle.load(f)
 #except:
-print('\ncatalog')
-print(catalog)
+#print('\ncatalog')
+#print(catalog)
 
 in_dr9 = catalog['in_dr9']
 filter_flags = catalog['new_filter_flags']
@@ -748,7 +754,7 @@ print("z_qsos", z_qsos, len(z_qsos))
 release = "dr12q/processed/preloaded_qsos"
 #release = "dr12q/processed/preloaded_zqso_only_qsos.mat"
 filename = os.path.join(parent_dir, release)
-with open(filename, 'rb') as f:
+with open(release, 'rb') as f:
     preqsos = pickle.load(f)
 
 #with h5py.File(filename, 'r') as fil:
@@ -1097,7 +1103,7 @@ for i in range(num_quasars):
 
     for j in range(learnParams.num_forest_lines):
          #calculate the oscillator strengths for Lyman series
-        this_tau_0 = prev_tau_0 * learnParams.all_oscillator_strengths[j] / learnParams.lya_oscillator_strength * learnParams.all_transition_wavelengths[j] / physConst.lya_wavelength
+        this_tau_0 = prev_tau_0 * learnParams.all_oscillator_strengths[j] / learnParams.lya_oscillator_strength * learnParams.all_transition_wavelengths[j] / physParams.lya_wavelength
     
         # remove the leading dimension
         this_lyman_1pzs = np.squeeze(all_lyman_1pzs[j, i, :])#'; % (1, num_rest_pixels)
@@ -1266,13 +1272,13 @@ print("variables_to_save", variables_to_save)
 direct = 'dr12q/processed'
 directory = os.path.join(parent_dir, direct)
                    
-place = '{}/learned_model_outdata_{}_norm_{}-{}'.format(directory, training_set_name, normParams.normalization_min_lambda, normParams.normalization_max_lambda)
+place = '{}/learned_model_outdata_{}_norm_{}-{}'.format(direct, training_set_name, normParams.normalization_min_lambda, normParams.normalization_max_lambda)
              
 # Open a file for writing data
 file_handler = open(place, 'wb')
 
 # Dump the data of the object into the file
-pickle.dump(variables_to_save, file_handler)
+dill.dump(variables_to_save, file_handler)
 
 # close the file handler to release the resources
 file_handler.close()
@@ -1516,10 +1522,12 @@ from scipy.optimize import root_scalar
 #uniform_max_log_nhi = 23.0                   # from uniform distribution
 #fit_min_log_nhi     = 20.0                   # range of column density samples    [cm⁻²]
 #fit_max_log_nhi     = 22.0                   # from fit to log PDF
+with open('parameters.pkl', 'rb') as handle:
+    params = dill.load(handle)
 
-dlaParams = dla_params()
-preParams = preproccesing_params()
-flag = flags()
+dlaParams = params['dlaParams']
+preParams = params['preParams']
+flag = params['flag']
 
 training_release  = 'dr12q'
 
@@ -1652,13 +1660,13 @@ variables_to_save = {'uniform_min_log_nhi':dlaParams.uniform_min_log_nhi, 'unifo
 #save(sprintf('%s/dla_samples', processed_directory(training_release)),variables_to_save{:}, '-v7.3');
 direct = 'dr12q/processed'
 pathName = os.path.join(parent_dir, direct)
-fileName = "{direct}/dla_samples".format(direct = pathName)
+fileName = "{dir}/dla_samples".format(dir = direct)
 
 # Open a file for writing data
 file_handler = open(fileName, 'wb')
 
 # Dump the data of the object into the file
-pickle.dump(variables_to_save, file_handler)
+dill.dump(variables_to_save, file_handler)
 
 # close the file handler to release the resources
 file_handler.close()

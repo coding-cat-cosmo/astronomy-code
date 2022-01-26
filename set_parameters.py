@@ -172,7 +172,8 @@ flag = flags()
 parameters = {"preParams": preParams, "loadParams": loadParams, "modelParams": modelParams,
               "instrumentParams": instrumentParams, "optParams": optParams, "moreParams": moreParams, 
               "nullParams": nullParams, "dlaParams": dlaParams, "normParams":normParams,
-               "learnParams": learnParams, "flag": flag}
+               "learnParams": learnParams, "flag": flag, "physParams":physConst,
+               "kms_to_z":kms_to_z, "emitted_wavelengths":emitted_wavelengths, "observed_wavelengths":observed_wavelengths}
 
 with open('parameters.pkl', 'wb') as handle:
     dill.dump(parameters, handle, protocol=pickle.HIGHEST_PROTOCOL)
