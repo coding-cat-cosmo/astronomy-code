@@ -3,9 +3,6 @@ import os
 import ssl
 import wget
 import tarfile
-#import sys
-#import urllib
-#import subprocess
 
 p = Path(os.getcwd())
 #gets parent path
@@ -32,10 +29,6 @@ getattr(ssl, '_create_unverified_context', None)):
     ssl._create_default_https_context = ssl._create_unverified_context
 url = "http://data.sdss3.org/sas/dr9/env/BOSS_QSO/DR9Q/DR9Q.fits"
 wget.download(url, directory)
-#filename = wget.download(url)
-#f_name = 'DR9Q.fits'
-#subprocess.Popen(['wget', '-O', add, filename])
-#urllib.urlretrieve(url, add)
  
 # By setting exist_ok as True
 # error caused due already
@@ -45,7 +38,7 @@ wget.download(url, directory)
 # invalid path name
 #DR10Q
 directory='dr10q/distfiles'
-add = os.path.join(parent_dir, directory)
+#add = os.path.join(parent_dir, directory)
 
 try:
     os.makedirs(directory)
@@ -58,7 +51,7 @@ wget.download(url, directory)
 
 #DR12Q
 directory='dr12q/distfiles'
-add = os.path.join(parent_dir, directory)
+#add = os.path.join(parent_dir, directory)
 
 try:
     os.makedirs(directory)
@@ -257,21 +250,13 @@ with open(base) as fpin:
             
 outf.close()
 
-#dill.load_session('parameters.pkl')
-
 import dill
 import pickle
 from astropy.io import fits
-#from astropy.io.fits import getdata
 from pathlib import Path
 import os
 import numpy as np
-#import astropy
 import pandas as pd
-#dill.load_session('parameters.pkl')
-#astropy.io.fits.Conf.use_memmap = True
-#lazy_load_hdus=False
-#disable_image_compression=True
 
 with open('parameters.pkl', 'rb') as handle:
     params = dill.load(handle)
@@ -289,28 +274,21 @@ parent_dir = str(p.parent)
 #original project has this function up one directory and needs data/dr9q/distfiles/DR9Q.fits
 #no need to go up one level either since data directory is at same level
 filepath = "dr9q/distfiles/DR9Q.fits"
-filename = os.path.join(parent_dir, filepath)
+#filename = os.path.join(parent_dir, filepath)
 with fits.open(filepath) as hdl:
     dr9_catalog = hdl[1].data # assuming the first extension is a table
-#hdul.close()
-#dr9_catalog = fits.getdata(filename, 'binarytable')
 
 filepath = "dr10q/distfiles/DR10Q_v2.fits"
-filename = os.path.join(parent_dir, filepath)
+#filename = os.path.join(parent_dir, filepath)
 with fits.open(filepath) as hdl:
     dr10_catalog = hdl[1].data # assuming the first extension is a table
-#hdul.close()
-#dr10_catalog = fits.getdata(filename, 'binarytable')
 
 filepath = "dr12q/distfiles/DR12Q.fits"
-filename = os.path.join(parent_dir, filepath)
+#filename = os.path.join(parent_dir, filepath)
 
 with fits.open(filepath) as hdl:
     dr12_catalog = hdl[1].data # assuming the first extension is a table
 print(dr12_catalog.dtype.names)
-#hdul.close()
-#dr12_catalog = fits.getdata(filename, 'binarytable')
-#print(data[0])
 
 #extract basic QSO information from DR12Q catalog
 sdss_names       =  dr12_catalog.field('SDSS_NAME')
@@ -341,29 +319,10 @@ other = np.zeros(num_quasars, np.uint8)
 
 # filtering bit 0: z_QSO < 2.15
 ind = (z_qsos < preParams.z_qso_cut)
-#filter_flags = np.bitwise_or(filter_flags, ind)
-#filter_flags[ind] = filter_flags[ind] | 0x00000001
 filter_flags[ind] = 1
-#filter_flags(ind) = bitset(filter_flags(ind), 1, true)
 
 # filtering bit 1: BAL
-#check list comprehension bs later
-#newlist = [x if x != "banana" else "orange" for x in fruits]
-#for idx, a in enumerate(foo):
-    #foo[idx] = a + 42
 ind = (bal_visual_flags)
-#comp = np.bitwise_or(comp, ind)
-#comp = comp | ind
-#comp[val == 1] = 2
-#comp[ind] = 2
-#comp = [val if val != 1 else 2 for val in comp]
-#for idx, val in enumerate(comp):
-#    if (val == 1):
-#        comp[idx] = 2
-
-#filter_flags = filter_flags + comp
-#filter_flags(ind) = bitset(filter_flags(ind), 2, true)
-#filter_flags[ind] = filter_flags[ind] | 0x00000010
 filter_flags[ind] = 2
 
 # filtering bit 4: ZWARNING
@@ -372,28 +331,7 @@ print("ind", ind, ind.shape, np.count_nonzero(ind))
 # but include `MANY_OUTLIERS` in our samples (bit: 1000)
 ind_many_outliers = (zwarning == 16)
 ind = ind & np.logical_not(ind_many_outliers)
-#ind_many_outliers      = (zwarning == int('10000', 2))
-#temp idea (only works for 3/4 of cases)
-#ind = np.bitwise_xor(ind, ind_many_outliers)
-#other = np.bitwise_or(other, ind)
-#filter_flags[ind] = filter_flags[ind] | 0x00010000
 filter_flags[ind] = 5
-#filter_flags = filter_flags + other
-#ind(ind_many_outliers) = 0
-#filter_flags(ind) = bitset(filter_flags(ind), 5, true)
-
-#print("ind_many_outliers")
-#print(ind_many_outliers)
-#print(ind_many_outliers.shape)
-#print(np.count_nonzero(ind_many_outliers))
-#print("ind")
-#print(ind)
-#print(ind.shape)
-#print(np.count_nonzero(ind))
-#temp = zwarning[zwarning>0]
-#print("temp")
-#print(temp)
-#print(temp.shape)
 
 los_inds = {}
 dla_inds = {}
@@ -424,9 +362,6 @@ for cat in catalog_name:
     
     for i in range(len(ind)):
         this_dla_ind = (dla_catalog[:,0] == thing_ids[ind[i]])
-        #print('\nloopy')
-        #print(i)
-        #print(dla_catalog[:,0] == thing_ids[i])
         this_z_dlas[ind[i]]   = dla_catalog[this_dla_ind, 1]
         this_log_nhis[ind[i]] = dla_catalog[this_dla_ind, 2]
         
@@ -457,7 +392,6 @@ pickle.dump(variables_to_save, file_handler)
 
 # close the file handler to release the resources
 file_handler.close()
-#np.save(filename, variables_to_save)
 
 # these plates use the 5.7.2 processing pipeline in SDSS DR12
 v_5_7_2_plates = np.array([7339, 7340, 7386, 7388, 7389, 7391, 7396, 7398, 7401, 
@@ -472,7 +406,7 @@ v_5_7_2_ind = np.isin(plates, v_5_7_2_plates)
 #fid = fopen(sprintf('%s/file_list', spectra_directory(release)), 'w');
 #originally has data in it
 release = "dr12q/spectra"
-filename = os.path.join(parent_dir, release)
+#filename = os.path.join(parent_dir, release)
 filelist = os.path.join(release, "file_list")
 
 try:
@@ -494,8 +428,6 @@ for i in range(num_quasars):
 
     fid =  "v5_7_0/spectra/lite/./{plate}/spec-{plate}-{mjd}-{:04d}.fits".format(fiber_ids[i], plate=plates[i], mjd=mjds[i])
     plate_data.append(fid)
-    
-#plate_data.append(fid)
 
 outf = open(filelist, 'w')
 for line in plate_data:
@@ -506,7 +438,7 @@ outf.close()
 
 # Path
 directory = 'checkpoints'
-add = os.path.join(parent_dir, directory)
+#add = os.path.join(parent_dir, directory)
  
 # Create the directory
 # 'distfiles' 
@@ -516,60 +448,3 @@ try:
 except OSError as error:
     print("Directory '%s' can not be created" %directory)
     
-print(sdss_names)
-print('\nRAS')
-print(ras)
-print('\ndecs')
-print(decs)
-print('\nthing_ids')
-print(thing_ids)
-print('\nplates')
-print(plates)
-print('\nmjds')
-print(mjds)
-print('\nfiber_ids')
-print(fiber_ids)
-print('\nz_qso\n')
-print("variable next")
-print(z_qsos)
-print('\n\nsnrs')
-print(snrs)
-print('\nzwarning')
-print(zwarning)
-print('\nbal_visual_flags')
-print(bal_visual_flags)
-print('\nnum_quasars')
-print(num_quasars)
-print('\nin_dr9')
-print(in_dr9)
-print('\nin_dr10')
-print(in_dr10)
-print('\nfilter_flags')
-print(filter_flags)
-print('\n')
-#if (np.array_equal(filter_flags, comp)):
-#    print("EQUAL")
-print('\nother')
-print(other)
-print('\nlos_catalog')
-print(los_catalog)
-print('\nlos_inds')
-print(los_inds)
-print('\ndla_catalog')
-print(dla_catalog)
-print('\ndla_inds')
-print(dla_inds)
-print('\nind')
-print(ind)
-#print('\nz_dlas')
-#print(z_dlas)
-#print('\nlog_nhis')
-#print(log_nhis)
-#print('\nvariables_to_save')
-#print(variables_to_save)
-print("v_5_7_2_ind")
-print(v_5_7_2_ind)
-print(v_5_7_2_ind.shape)
-#print('\nplate_data')
-#print(plate_data)
-print('\n\n\ni')
