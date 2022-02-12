@@ -56,13 +56,8 @@ with open('parameters.pkl', 'rb') as handle:
     params = dill.load(handle)
 
 preParams = params['preParams']
-preParams.min_num_pixels = 200
 normParams = params['normParams']
-normParams.normalization_min_lambda = 1176
-normParams.normalization_max_lambda = 1256
 loading = params['loadParams']
-loading.loading_min_lambda = 910
-loading.loading_max_lambda = 1217
 nullParams = params['nullParams']
 
 p = Path(os.getcwd())

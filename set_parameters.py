@@ -30,17 +30,17 @@ class preproccesing_params:
         self.z_qso_cut      = 2.15                        # filter out QSOs with z less than this threshold
         self.z_qso_training_max_cut = 5                   # roughly 95% of training data occurs before this redshift; 
                                              # assuming for normalization purposes (move to set_parameters when pleased)
-        self.min_num_pixels = 400                         # minimum number of non-masked pixels
+        self.min_num_pixels = 200                         # minimum number of non-masked pixels
 
 class normalization_params:
     def __init__(self):
-        self.normalization_min_lambda = 1216 - 40              # range of rest wavelengths to use   Å
-        self.normalization_max_lambda = 1216 + 40              #   for flux normalization
+        self.normalization_min_lambda = 1176              # range of rest wavelengths to use   Å
+        self.normalization_max_lambda = 1256              #   for flux normalization
         
 class file_loading:
     def __init__(self):
-        self.loading_min_lambda = 700                   # range of rest wavelengths to load  Å
-        self.loading_max_lambda = 5000                  # This maximum is set so we include CIV.
+        self.loading_min_lambda = 910                   # range of rest wavelengths to load  Å
+        self.loading_max_lambda = 1217                  # This maximum is set so we include CIV.
 # The maximum allowed is set so that even if the peak is redshifted off the end, the
 # quasar still has data in the range
 

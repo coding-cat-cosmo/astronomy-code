@@ -1016,6 +1016,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
 from scipy.special import voigt_profile
+import h5py
 #import cProfile
 #from voigt import voigt
 
@@ -1266,6 +1267,7 @@ place = '{}/learned_model_outdata_{}_norm_{}-{}'.format(directory, training_set_
 #try:
 with open(place,'rb') as f:
     model = pickle.load(f)
+
 #except:
 #print('\nmodel')
 #print(model)
@@ -1280,6 +1282,57 @@ bluewards_mu = model['bluewards_mu']
 bluewards_sigma = model['bluewards_sigma']
 redwards_mu = model['redwards_mu']
 redwards_sigma = model['redwards_sigma']
+
+###ALTERNATIVE
+#place = '{}/learned_model_outdata_dr9q_minus_concordance_norm_1176-1256.mat'.format(directory)
+#place = "dr12q/processed/learned_zqso_only_model_outdata_normout_dr9q_minus_concordance_norm_1176-1256.mat"
+#f = h5py.File(place,'r')
+#print(f.keys())
+#rest_wavelengths = f.get("rest_wavelengths")
+#rest_wavelengths = np.array(rest_wavelengths)
+#rest_wavelengths = np.squeeze(rest_wavelengths)
+#print("rest_wavelengths and size", rest_wavelengths, rest_wavelengths.shape)
+#mu = f.get("mu")
+#mu = np.array(mu)
+#mu = np.squeeze(mu)
+#print("mu and size", mu, mu.shape)
+#M = f.get("M")
+#M = np.array(M)
+#M = M.T
+#print("M and size", M, M.shape)
+#log_omega = f.get("log_omega")
+#log_omega = np.array(log_omega)
+#log_omega = np.squeeze(log_omega)
+#print("log_omega and size", log_omega, log_omega.shape)
+#log_c_0 = f.get("log_c_0")
+#log_c_0 = np.array(log_c_0)
+#log_c_0 = np.squeeze(log_c_0)
+#print("log_c_0 and size", log_c_0, log_c_0.shape)
+#log_tau_0 = f.get("log_tau_0")
+#log_tau_0 = np.array(log_tau_0)
+#log_tau_0 = np.squeeze(log_tau_0)
+#print("log_tau_0 and size", log_tau_0, log_tau_0.shape)
+#log_beta = f.get("log_beta")
+#log_beta = np.array(log_beta)
+#log_beta = np.squeeze(log_beta)
+#print("log_beta and size", log_beta, log_beta.shape)
+#bluewards_mu = f.get("bluewards_mu")
+#bluewards_mu = np.array(bluewards_mu)
+#bluewards_mu = np.squeeze(bluewards_mu)
+#print("bluewards_mu and size", bluewards_mu, bluewards_mu.shape)
+#bluewards_sigma = f.get("bluewards_sigma")
+#bluewards_sigma = np.array(bluewards_sigma)
+#bluewards_sigma = np.squeeze(bluewards_sigma)
+#print("bluewards_sigma and size", bluewards_sigma, bluewards_sigma.shape)
+#redwards_mu = f.get("redwards_mu")
+#redwards_mu = np.array(redwards_mu)
+#redwards_mu = np.squeeze(redwards_mu)
+#print("rewards_mu and size", redwards_mu, redwards_mu.shape)
+#redwards_sigma = f.get("redwards_sigma")
+#redwards_sigma = np.array(redwards_sigma)
+#redwards_sigma = np.squeeze(redwards_sigma)
+#print("redwards_sigma and size", redwards_sigma, redwards_sigma.shape)
+
 
 # load DLA samples from training release
 #variables_to_load = {'offset_samples', 'offset_samples_qso', 'log_nhi_samples', 'nhi_samples'};

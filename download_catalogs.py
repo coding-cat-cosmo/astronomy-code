@@ -3,6 +3,21 @@ import os
 import ssl
 import wget
 import tarfile
+import dill
+import pickle
+from astropy.io import fits
+from pathlib import Path
+import os
+import numpy as np
+import pandas as pd
+
+#function creates directory given a valid path as an input
+def makeDir(directory):
+    try:
+        os.makedirs(directory)
+        print("Directory '%s' created successfully" %directory)
+    except OSError as error:
+        print("Directory '%s' can not be created" %directory)
 
 p = Path(os.getcwd())
 #gets parent path
@@ -18,11 +33,7 @@ add = os.path.join(parent_dir, directory)
  
 # Create the directory
 # 'distfiles' 
-try:
-    os.makedirs(directory)
-    print("Directory '%s' created successfully" %directory)
-except OSError as error:
-    print("Directory '%s' can not be created")
+makeDir(directory)
     
 if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
 getattr(ssl, '_create_unverified_context', None)):
@@ -40,11 +51,7 @@ wget.download(url, directory)
 directory='dr10q/distfiles'
 #add = os.path.join(parent_dir, directory)
 
-try:
-    os.makedirs(directory)
-    print("\nDirectory '%s' created successfully\n" %directory)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(directory)
     
 url = "http://data.sdss3.org/sas/dr10/boss/qso/DR10Q/DR10Q_v2.fits"
 wget.download(url, directory)
@@ -53,11 +60,7 @@ wget.download(url, directory)
 directory='dr12q/distfiles'
 #add = os.path.join(parent_dir, directory)
 
-try:
-    os.makedirs(directory)
-    print("\nDirectory '%s' created successfully\n" %directory)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(directory)
     
 url = "http://data.sdss3.org/sas/dr12/boss/qso/DR12Q/DR12Q.fits"
 wget.download(url, directory)
@@ -70,11 +73,7 @@ cat = os.path.join(directory, name)
 direct = "dr9q_concordance/distfiles"
 add = os.path.join(directory, direct)
 
-try:
-    os.makedirs(add)
-    print("\nDirectory '%s' created successfully\n" %direct)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(add)
     
 url = "http://data.sdss3.org/sas/dr9/boss/lya/cat/BOSSLyaDR9_cat.txt"
 wget.download(url, add)
@@ -82,11 +81,7 @@ wget.download(url, add)
 direct = "processed"
 add = os.path.join(cat, direct)
 
-try:
-    os.makedirs(add)
-    print("\nDirectory '%s' created successfully\n" %direct)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(add)
     
 #COMMAND = "tail -n+2 ./*/*.tsv|cat|awk 'BEGIN{FS=\"\t\"};{split($10,arr,\"-\")}{print arr[1]}'|sort|uniq -c"  
 
@@ -127,11 +122,7 @@ cat = os.path.join(directory, name)
 direct = "dr12q_noterdaeme/distfiles"
 add = os.path.join(directory, direct)
 
-try:
-    os.makedirs(add)
-    print("\nDirectory '%s' created successfully\n" %direct)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(add)
     
 url = "http://www2.iap.fr/users/noterdae/DLA/DLA_DR12_v2.tgz"
 wget.download(url, add)
@@ -144,11 +135,7 @@ tar.close()
 direct = "processed"
 add = os.path.join(cat, direct)
 
-try:
-    os.makedirs(add)
-    print("\nDirectory '%s' created successfully\n" %direct)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(add)
 
 #more gawking here
 direct = "distfiles/DLA_DR12_v2.dat"
@@ -190,11 +177,7 @@ cat = os.path.join(directory, name)
 direct = "dr12q_visual/distfiles"
 add = os.path.join(directory, direct)
 
-try:
-    os.makedirs(add)
-    print("\nDirectory '%s' created successfully\n" %direct)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(add)
     
 url = "http://www2.iap.fr/users/noterdae/DLA/DLA_DR12_v2.tgz"
 wget.download(url, add)
@@ -249,14 +232,6 @@ with open(base) as fpin:
             outf.write("\n")
             
 outf.close()
-
-import dill
-import pickle
-from astropy.io import fits
-from pathlib import Path
-import os
-import numpy as np
-import pandas as pd
 
 with open('parameters.pkl', 'rb') as handle:
     params = dill.load(handle)
@@ -377,11 +352,7 @@ variables_to_save = {'sdss_names': sdss_names, 'ras': ras, 'decs': decs, 'thing_
                      'filter_flags': filter_flags, 'los_inds': los_inds, 'dla_inds': dla_inds,
                      'z_dlas': z_dlas, 'log_nhis': log_nhis}
 
-try:
-    os.makedirs(release)
-    print("\nDirectory '%s' created successfully\n" %release)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
+makeDir(release)
     
 # Open a file for writing data
 filepath = os.path.join(release, "catalog")
@@ -409,12 +380,7 @@ release = "dr12q/spectra"
 #filename = os.path.join(parent_dir, release)
 filelist = os.path.join(release, "file_list")
 
-try:
-    os.makedirs(release)
-    print("\nDirectory '%s' created successfully\n" %release)
-except OSError as error:
-    print("\nDirectory '%s' can not be created\n")
-    
+makeDir(release)   
 
 plate_data = []
 for i in range(num_quasars):
@@ -442,9 +408,5 @@ directory = 'checkpoints'
  
 # Create the directory
 # 'distfiles' 
-try:
-    os.makedirs(directory)
-    print("Directory '%s' created successfully" %directory)
-except OSError as error:
-    print("Directory '%s' can not be created" %directory)
+makeDir(directory)
     
