@@ -29,7 +29,7 @@ parent_dir = str(p.parent)
 release = "dr12q/processed/catalog"
 filename = os.path.join(parent_dir, release)
 #getting back pickled data for catalog
-with open(filename,'rb') as f:
+with open(release,'rb') as f:
     catalog = pickle.load(f)
 
 # generate quasirandom samples from p(normalized offset, log₁₀(N_HI))

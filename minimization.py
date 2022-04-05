@@ -1,10 +1,11 @@
-import scipy.optimize as opt
+import numpy as np
 from numba import njit
-import time
-import os 
 import dill
 import pickle
-
+from pathlib import Path
+from scipy import optimize
+import os
+import time
 # spectrum_loss: computes the negative log likelihood for centered
 # flux y:
 #
@@ -331,3 +332,84 @@ def callbackF(Xi):
     Nfeval += 1
     other += 1
     start = time.time()
+
+direct = "dr12q/processed"
+place = os.path.join(direct, "unoptimized_model")
+
+with open(place, 'rb') as handle:
+    unop = dill.load(handle)
+
+training_release = unop['training_release']
+train_ind = unop['train_ind']
+max_noise_variance = unop['max_noise_variance']
+rest_wavelengths = unop['rest_wavelengths']
+mu = unop['mu']
+initial_M = unop['initial_M']
+initial_log_omega = unop['initial_log_omega']
+initial_log_c_0 = unop['initial_log_c_0']
+initial_tau_0 = unop['initial_tau_0']
+initial_beta = unop['initial_beta']
+maxes = unop['maxes']
+initial_x = unop['initial_x']
+bluewards_mu = unop['bluewards_mu']
+bluewards_sigma = unop['bluewards_sigma']
+redwards_mu = unop['redwards_mu']
+redwards_sigma = unop['redwards_sigma']
+num_rest_pixels = unop['num_rest_pixels']
+k = unop['k']
+training_set_name = unop['training_set_name']
+normalization_min_lambda = unop['normalization_min_lambda']
+normalization_max_lambda = unop['normalization_max_lambda']
+centered_rest_fluxes = unop['centered_rest_fluxes']
+lya_1pzs = unop['lya_1pzs']
+rest_noise_variances_exp1pz = unop['rest_noise_variances_exp1pz']
+num_forest_lines = unop['num_forest_lines']
+all_transition_wavelengths = unop['all_transition_wavelengths']
+all_oscillator_strengths = unop['all_oscillator_strengths']
+z_qsos = unop['z_qsos']
+
+objective_function = lambda x : objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances_exp1pz, num_forest_lines, all_transition_wavelengths, all_oscillator_strengths, z_qsos)
+
+
+#method = trust- or CG ones that I would try first: CG, BFGS, Newton-CG, trust-ncg, SLSQP
+result = optimize.minimize(objective_function, initial_x, method='L-BFGS-B', jac=True, options={'maxfun':8000, 'maxiter':1000}, callback=callbackF)
+#try method Nelder-Mead
+#result = optimize.minimize(objective_function, initial_x, method='CG', jac=True, options={'maxiter':3000})
+#result.x, result.fun, result.message. result.success
+x = result.x
+log_likelihood = result.fun
+message = result.message
+success = result.success
+ind = list(range(num_rest_pixels * k))
+ind = np.array(ind)
+M = np.reshape(x[ind], [num_rest_pixels, k], order='F')
+
+ind = list(range((num_rest_pixels * k), (num_rest_pixels * (k + 1))))
+ind = np.array(ind)
+#print("ind", ind, ind.shape)
+log_omega = x[ind].T
+
+log_c_0   = x[-3]
+log_tau_0 = x[-2]
+log_beta  = x[-1]
+
+variables_to_save = {'training_release':training_release, 'train_ind':train_ind, 'max_noise_variance':max_noise_variance,
+                     'rest_wavelengths':rest_wavelengths, 'mu':mu, 'initial_M':initial_M, 'initial_log_omega':initial_log_omega,
+                     'initial_log_c_0':initial_log_c_0, 'initial_tau_0':initial_tau_0, 'initial_beta':initial_beta, 'maxes':maxes,
+                     'M':M, 'log_omega':log_omega, 'log_c_0':log_c_0, 'log_tau_0':log_tau_0, 'log_beta':log_beta, 'result':result,
+                     'log_likelihood':log_likelihood, 'message':message, 'success':success, 'bluewards_mu':bluewards_mu,
+                     'bluewards_sigma':bluewards_sigma, 'redwards_mu':redwards_mu, 'redwards_sigma':redwards_sigma}
+
+direct = 'dr12q/processed'
+#directory = os.path.join(parent_dir, direct)
+                   
+place = '{}/learned_model_outdata_{}_norm_{}-{}'.format(direct, training_set_name, normalization_min_lambda, normalization_max_lambda)
+             
+# Open a file for writing data
+file_handler = open(place, 'wb')
+
+# Dump the data of the object into the file
+dill.dump(variables_to_save, file_handler)
+
+# close the file handler to release the resources
+file_handler.close()

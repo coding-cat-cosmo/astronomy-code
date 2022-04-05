@@ -267,7 +267,6 @@ print("Columns with nan > 0.9: ")
 mu = np.nanmean(rest_fluxes_div_exp1pz, axis=0)
 centered_rest_fluxes = rest_fluxes_div_exp1pz[...,:] - mu
 rest_fluxes = None
-rest_fluxes_div_exp1pz = None
 
 # small fix to the data fit into the pca:
 # make the NaNs to the medians of a given row
@@ -313,7 +312,7 @@ initial_x = np.append(initial_x, [initial_log_c_0, initial_log_tau_0, initial_lo
 # maximize likelihood via L-BFGS
 maxes = {'maxfun':8000, 'maxiter':4000}
 #method = trust- or CG ones that I would try first: CG, BFGS, Newton-CG, trust-ncg, SLSQP
-result = optimize.minimize(objective_function, initial_x, method='L-BFGS-B', jac=True, options=maxes)
+result = optimize.minimize(objective_function, initial_x, method='L-BFGS-B', jac=True, options=maxes, callback=callbackF)
 #try method Nelder-Mead
 #result = optimize.minimize(objective_function, initial_x, method='CG', jac=True, options={'maxiter':3000})
 #result.x, result.fun, result.message. result.success
