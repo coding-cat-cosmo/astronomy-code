@@ -370,7 +370,8 @@ z_qsos = unop['z_qsos']
 
 objective_function = lambda x : objective(x, centered_rest_fluxes, lya_1pzs, rest_noise_variances_exp1pz, num_forest_lines, all_transition_wavelengths, all_oscillator_strengths, z_qsos)
 
-
+with open("temp", "rb") as fing:
+    initial_x = dill.load(fing)
 #method = trust- or CG ones that I would try first: CG, BFGS, Newton-CG, trust-ncg, SLSQP
 result = optimize.minimize(objective_function, initial_x, method='L-BFGS-B', jac=True, options={'maxfun':8000, 'maxiter':1000}, callback=callbackF)
 #try method Nelder-Mead
