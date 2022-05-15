@@ -9,6 +9,7 @@ from scipy import interpolate
 from scipy import optimize
 from sklearn.decomposition import IncrementalPCA
 
+#Loading in all of the data and parameters
 with open('parameters.pkl', 'rb') as handle:
     params = dill.load(handle)
 
@@ -99,6 +100,7 @@ bluewards_nv = []
 redwards_flux = []
 redwards_nv = []
 
+#Creation of the base model
 for i in range(num_quasars):
     z_qso = z_qsos[i]
 
@@ -247,6 +249,7 @@ for i in range(num_quasars):
 all_lyman_1pzs = None
 
 # Filter out spectra which have too many NaN pixels
+#Filtering section
 ind = (np.sum(np.isnan(rest_fluxes_div_exp1pz), axis=1) < (num_rest_pixels-preParams.min_num_pixels))
 
 print("Filtering {width} quasars for NaN\n".format(width=rest_fluxes_div_exp1pz.shape[1] - np.count_nonzero(ind)))
@@ -309,13 +312,13 @@ init_M = np.reshape(initial_M, initial_M.shape[0]*initial_M.shape[1], order='F')
 initial_x = np.concatenate((init_M, initial_log_omega))
 initial_x = np.append(initial_x, [initial_log_c_0, initial_log_tau_0, initial_log_beta])
 
+#minimization of negative log likelihood
 # maximize likelihood via L-BFGS
 maxes = {'maxfun':8000, 'maxiter':4000}
 #method = trust- or CG ones that I would try first: CG, BFGS, Newton-CG, trust-ncg, SLSQP
 result = optimize.minimize(objective_function, initial_x, method='L-BFGS-B', jac=True, options=maxes, callback=callbackF)
 #try method Nelder-Mead
 #result = optimize.minimize(objective_function, initial_x, method='CG', jac=True, options={'maxiter':3000})
-#result.x, result.fun, result.message. result.success
 x = result.x
 log_likelihood = result.fun
 message = result.message
