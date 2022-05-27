@@ -10,4 +10,5 @@ generate_dla_samples.py which makes the Halton sequence and some integrations ne
 testing.py and voigt_function.py which uses all the previously made files together to estimate quasar redshift and DLA detection and redshift and saves it in a processed_qsos file.  
 
 The temporary.py and minimization.py are files used to save everything and just run the minimization if wanted. The temporary.py was used to just get the model creation part done while the minimization.py actually optimizes and saves the model.\
-The combination.py combines different jobs together if that is perferred since the testing script supports multiprocessing.
+The combination.py combines different jobs together if that is perferred since the testing script supports multiprocessing.\
+Lines 739-766 can be changed to allow multiprocessing in the testing.py file with changing the unpacking method used for the variables.
